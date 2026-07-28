@@ -1,0 +1,29 @@
+package com.wbq.aicodemother.ai;
+
+import com.wbq.aicodemother.ai.model.HtmlCodeResult;
+import com.wbq.aicodemother.ai.model.MultiFileCodeResult;
+import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+class AiCodeGeneratorServiceTest {
+
+    @Resource
+    private AiCodeGeneratorService aiCodeGeneratorService;
+
+    @Test
+    void generateHtmlCode() {
+        HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode("做个简易的博客网站，不超过20行");
+        Assertions.assertNotNull(result);
+    }
+
+    @Test
+    void generateMultiFileCode() {
+        MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode("做个简易的留言板网站，不超过50行");
+        Assertions.assertNotNull(result);
+    }
+}
