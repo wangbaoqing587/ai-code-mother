@@ -10,7 +10,7 @@ import com.wbq.aicodemother.constant.UserConstant;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.exception.ThrowUtils;
-import com.wbq.aicodemother.model.dto.*;
+import com.wbq.aicodemother.model.dto.user.*;
 import com.wbq.aicodemother.model.vo.LoginUserVO;
 import com.wbq.aicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;

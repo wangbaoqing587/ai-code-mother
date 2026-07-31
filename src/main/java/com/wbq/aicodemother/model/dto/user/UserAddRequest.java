@@ -1,4 +1,4 @@
-package com.wbq.aicodemother.model.dto;
+package com.wbq.aicodemother.model.dto.user;
 
 import lombok.Data;
 

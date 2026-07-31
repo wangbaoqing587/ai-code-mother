@@ -9,13 +9,14 @@ import java.time.LocalDateTime;
 
 import java.io.Serial;
 
+import com.mybatisflex.core.keygen.KeyGenerators;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 用户 实体类。
+ * 对话历史 实体类。
  *
  * @author <a href="https://github.com/wangbaoqing587">王包青</a>
  */
@@ -23,8 +24,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("user")
-public class User implements Serializable {
+@Table("chat_history")
+public class ChatHistory implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -32,50 +33,31 @@ public class User implements Serializable {
     /**
      * id
      */
-    @Id(keyType = KeyType.Auto)
+    @Id(keyType = KeyType.Generator, value = KeyGenerators.snowFlakeId)
     private Long id;
 
     /**
-     * 账号
+     * 消息
      */
-    @Column("userAccount")
-    private String userAccount;
+    private String message;
 
     /**
-     * 密码
+     * user/ai
      */
-    @Column("userPassword")
-    private String userPassword;
+    @Column("messageType")
+    private String messageType;
 
     /**
-     * 用户昵称
+     * 应用id
      */
-    @Column("userName")
-    private String userName;
+    @Column("appId")
+    private Long appId;
 
     /**
-     * 用户头像
+     * 创建用户id
      */
-    @Column("userAvatar")
-    private String userAvatar;
-
-    /**
-     * 用户简介
-     */
-    @Column("userProfile")
-    private String userProfile;
-
-    /**
-     * 用户角色：user/admin
-     */
-    @Column("userRole")
-    private String userRole;
-
-    /**
-     * 编辑时间
-     */
-    @Column("editTime")
-    private LocalDateTime editTime;
+    @Column("userId")
+    private Long userId;
 
     /**
      * 创建时间
@@ -96,4 +78,3 @@ public class User implements Serializable {
     private Integer isDelete;
 
 }
-

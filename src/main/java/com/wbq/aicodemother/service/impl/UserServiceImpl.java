@@ -7,7 +7,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
-import com.wbq.aicodemother.model.dto.UserQueryRequest;
+import com.wbq.aicodemother.model.dto.user.UserQueryRequest;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.mapper.UserMapper;
 import com.wbq.aicodemother.model.enums.UserRoleEnum;
