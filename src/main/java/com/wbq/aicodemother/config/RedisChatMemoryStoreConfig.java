@@ -1,6 +1,8 @@
 package com.wbq.aicodemother.config;
 
+import com.wbq.aicodemother.ai.memory.ValidatingChatMemoryStore;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,13 +22,13 @@ public class RedisChatMemoryStoreConfig {
     private long ttl;
 
     @Bean
-    public RedisChatMemoryStore redisChatMemoryStore() {
-        // 密码为空时，不配置密码
-        return RedisChatMemoryStore.builder()
+    public ChatMemoryStore chatMemoryStore() {
+        RedisChatMemoryStore redisChatMemoryStore = RedisChatMemoryStore.builder()
                 .host(host)
                 .port(port)
                 .password(password)
                 .ttl(ttl)
                 .build();
+        return new ValidatingChatMemoryStore(redisChatMemoryStore);
     }
 }
