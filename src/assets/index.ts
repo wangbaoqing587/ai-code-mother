@@ -1,0 +1,5 @@
+export { default as avatarChatbot } from './avatar_chatbot.png'
+export { default as avatarDefault } from './avatar_default.png'
+export { default as iconCopy } from './icon_copy.png'
+export { default as iconLogo } from './icon_logo.png'
+export { default as iconWeb } from './icon_web.png'

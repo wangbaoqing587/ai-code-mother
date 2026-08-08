@@ -1,27 +1,36 @@
 import axios from 'axios'
 import { message } from 'ant-design-vue'
+import { redirectToLogin } from '@/access/redirectToLogin'
+import { API_BASE_URL } from '@/config/env'
 
 const myAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8123/api',
+  baseURL: API_BASE_URL,
   timeout: 60000,
   withCredentials: true,
 })
 
 myAxios.interceptors.request.use(
-  (config) => {
+  function (config) {
     return config
   },
-  (error) => {
+  function (error) {
     return Promise.reject(error)
   },
 )
 
 myAxios.interceptors.response.use(
-  (response) => {
+  function (response) {
+    const { data } = response
+    if (data.code === 40100) {
+      const requestUrl = String(response.config.url || response.request?.responseURL || '')
+      if (!requestUrl.includes('/user/get/login') && !requestUrl.includes('/user/login')) {
+        message.warning('请先登录')
+        redirectToLogin()
+      }
+    }
     return response
   },
-  (error) => {
-    message.error(`请求错误：${error.message}`)
+  function (error) {
     return Promise.reject(error)
   },
 )
