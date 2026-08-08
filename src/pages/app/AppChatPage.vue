@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
-import { deleteApp, deleteAppByAdmin, deployApp, getAppVoById } from '@/api/appController'
+import { deleteApp, deleteAppByAdmin, deployApp, downloadAppCode, getAppVoById } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { ACCESS_ENUM } from '@/access/accessEnum'
 import { avatarChatbot, iconWeb } from '@/assets'
@@ -13,6 +13,7 @@ import PromptInputBox from '@/components/PromptInputBox.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
 
 interface ChatMessage {
@@ -37,6 +38,7 @@ const isLoadingHistory = ref(false)
 const isLoadingMoreHistory = ref(false)
 const isGenerating = ref(false)
 const isDeploying = ref(false)
+const isDownloading = ref(false)
 const isDetailOpen = ref(false)
 const isDeploySuccessOpen = ref(false)
 const deployUrl = ref('')
@@ -289,6 +291,37 @@ async function handleDeploy() {
   }
 }
 
+async function handleDownload() {
+  if (!appId.value || isDownloading.value) {
+    return
+  }
+  isDownloading.value = true
+  try {
+    const res = await downloadAppCode(
+      { appId: appId.value as unknown as number },
+      { responseType: 'blob' },
+    )
+    const blob = res.data as Blob
+    const contentType = String(res.headers['content-type'] || '')
+    if (contentType.includes('application/json')) {
+      const text = await blob.text()
+      const json = JSON.parse(text) as { message?: string }
+      message.error('下载失败：' + (json.message ?? '未知错误'))
+      return
+    }
+    const filename = getFilenameFromContentDisposition(
+      res.headers['content-disposition'],
+      `${appInfo.value.appName || appId.value}.zip`,
+    )
+    triggerBlobDownload(blob, filename)
+    message.success('下载成功')
+  } catch {
+    message.error('下载失败')
+  } finally {
+    isDownloading.value = false
+  }
+}
+
 function handleEditApp() {
   isDetailOpen.value = false
   router.push(`/app/edit/${appId.value}`)
@@ -361,6 +394,7 @@ onBeforeUnmount(() => {
       </div>
       <a-space>
         <a-button @click="isDetailOpen = true">应用详情</a-button>
+        <a-button :loading="isDownloading" @click="handleDownload">下载代码</a-button>
         <a-button type="primary" :loading="isDeploying" @click="handleDeploy">部署</a-button>
       </a-space>
     </div>
