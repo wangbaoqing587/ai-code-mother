@@ -2,6 +2,7 @@ package com.wbq.aicodemother.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.wbq.aicodemother.model.dto.app.AppAddRequest;
 import com.wbq.aicodemother.model.dto.app.AppQueryRequest;
 import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
@@ -50,6 +51,15 @@ public interface AppService extends IService<App> {
      * @return
      */
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+
+    /**
+     * 创建应用
+     *
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
      * 部署应用

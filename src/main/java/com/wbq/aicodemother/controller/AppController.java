@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
+import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingService;
 import com.wbq.aicodemother.annotation.AuthCheck;
 import com.wbq.aicodemother.common.BaseResponse;
 import com.wbq.aicodemother.common.DeleteRequest;
@@ -153,19 +154,10 @@ public class AppController {
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
-        String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
-        App app = new App();
-        BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为生成 Vue 项目代码
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-        app.setPriority(AppConstant.DEFAULT_APP_PRIORITY);
-        boolean result = appService.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        return ResultUtils.success(app.getId());
+        Long appId = appService.createApp(appAddRequest, loginUser);
+        return ResultUtils.success(appId);
     }
 
     /**
