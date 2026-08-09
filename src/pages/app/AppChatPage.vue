@@ -12,6 +12,7 @@ import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
+import { formatCodeGenType, getCodeGenTypeOption } from '@/constants/codeGenType'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
@@ -64,6 +65,13 @@ const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM
 const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
 const canManage = computed(() => isAdmin.value || isOwner.value)
 const userAvatar = computed(() => loginUserStore.loginUser.userAvatar || '')
+const codeGenTypeTag = computed(() => {
+  const option = getCodeGenTypeOption(appInfo.value.codeGenType)
+  return {
+    label: option?.label || formatCodeGenType(appInfo.value.codeGenType),
+    color: option?.color || '#8c8c8c',
+  }
+})
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -390,7 +398,16 @@ onBeforeUnmount(() => {
       <div class="app-name">
         <img class="app-logo" :src="iconWeb" alt="web" />
         <a-spin v-if="isLoadingApp" size="small" />
-        <span v-else class="app-name-text">{{ appInfo.appName || '未命名应用' }}</span>
+        <template v-else>
+          <span class="app-name-text">{{ appInfo.appName || '未命名应用' }}</span>
+          <span
+            v-if="appInfo.codeGenType"
+            class="app-type-tag"
+            :style="{ background: codeGenTypeTag.color + '22', color: codeGenTypeTag.color }"
+          >
+            {{ codeGenTypeTag.label }}
+          </span>
+        </template>
       </div>
       <a-space>
         <a-button @click="isDetailOpen = true">应用详情</a-button>
@@ -539,6 +556,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-type-tag {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
 }
 
 .app-logo {

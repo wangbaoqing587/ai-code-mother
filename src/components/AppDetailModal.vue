@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { formatCodeGenType } from '@/constants/codeGenType'
 import { formatDateTime } from '@/utils/time'
 
 interface Props {
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 const creatorName = computed(() => props.app.user?.userName || '未知用户')
 const creatorAvatar = computed(() => props.app.user?.userAvatar || '')
 const createTimeText = computed(() => formatDateTime(props.app.createTime))
+const codeGenTypeText = computed(() => formatCodeGenType(props.app.codeGenType))
 
 function handleOpenChange(value: boolean) {
   emit('update:open', value)
@@ -42,6 +44,10 @@ function handleOpenChange(value: boolean) {
         <UserAvatar :size="40" :src="creatorAvatar" />
         <span>{{ creatorName }}</span>
       </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">生成类型</div>
+      <div class="detail-value">{{ codeGenTypeText }}</div>
     </div>
     <div class="detail-section">
       <div class="detail-label">创建时间</div>
