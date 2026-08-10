@@ -16,6 +16,11 @@ import { formatCodeGenType, getCodeGenTypeOption } from '@/constants/codeGenType
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
+import {
+  buildPromptWithElement,
+  createVisualEditor,
+  type ElementInfo,
+} from '@/utils/visualEditor'
 
 interface ChatMessage {
   id: string
@@ -49,8 +54,27 @@ const hasMoreHistory = ref(false)
 const historyTotal = ref(0)
 const historyCursor = ref<string>()
 const messagesRef = ref<HTMLElement | null>(null)
+const previewFrameRef = ref<HTMLIFrameElement | null>(null)
+const isEditMode = ref(false)
+const selectedElementInfo = ref<ElementInfo | null>(null)
 
 let closeStream: (() => void) | null = null
+
+const visualEditor = createVisualEditor({
+  onElementSelected(info) {
+    selectedElementInfo.value = info
+  },
+})
+
+const selectedElementAlertText = computed(() => {
+  const info = selectedElementInfo.value
+  if (!info) {
+    return ''
+  }
+  const tag = info.tagName.toLowerCase()
+  const content = info.textContent || '无'
+  return `已选中 ${tag}（${info.selector}），当前内容：${content}`
+})
 
 const appId = computed(() => {
   const id = route.params.id
@@ -195,16 +219,60 @@ function stopStream() {
   }
 }
 
+function resetVisualEditState() {
+  selectedElementInfo.value = null
+  if (isEditMode.value) {
+    visualEditor.disableEditMode()
+    isEditMode.value = false
+  }
+}
+
+function handleToggleEditMode() {
+  if (!canPreview.value || isGenerating.value) {
+    message.warning('请先生成网站后再进行编辑')
+    return
+  }
+  if (previewFrameRef.value) {
+    visualEditor.init(previewFrameRef.value)
+  }
+  const enabled = visualEditor.toggleEditMode()
+  isEditMode.value = enabled
+  if (enabled) {
+    message.info('已进入编辑模式，点击预览中的元素进行选中', 3)
+    return
+  }
+  selectedElementInfo.value = null
+}
+
+function clearSelectedElement() {
+  selectedElementInfo.value = null
+  visualEditor.clearSelection()
+}
+
+function handleIframeLoad() {
+  if (previewFrameRef.value) {
+    visualEditor.init(previewFrameRef.value)
+  }
+  visualEditor.onIframeLoad()
+}
+
+function handleWindowMessage(event: MessageEvent) {
+  visualEditor.handleIframeMessage(event)
+}
+
 async function sendMessage(rawMessage: string) {
   const text = rawMessage.trim()
   if (!text || !appId.value || isGenerating.value) {
     return
   }
 
+  const prompt = buildPromptWithElement(text, selectedElementInfo.value)
+  resetVisualEditState()
+
   messages.value.push({
     id: createMessageId(),
     role: 'user',
-    content: text,
+    content: prompt,
   })
   const aiMessageIndex = messages.value.length
   messages.value.push({
@@ -217,7 +285,7 @@ async function sendMessage(rawMessage: string) {
   isGenerating.value = true
   showPreview.value = false
   await scrollToBottom()
-  await generateCodeStream(text, aiMessageIndex)
+  await generateCodeStream(prompt, aiMessageIndex)
 }
 
 async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
@@ -362,6 +430,7 @@ function handleDeleteApp() {
 
 async function initPage() {
   stopStream()
+  resetVisualEditState()
   messages.value = []
   showPreview.value = false
   hasMoreHistory.value = false
@@ -383,11 +452,20 @@ watch(
   },
 )
 
+watch(canPreview, (value) => {
+  if (!value) {
+    resetVisualEditState()
+  }
+})
+
 onMounted(() => {
+  window.addEventListener('message', handleWindowMessage)
   initPage()
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('message', handleWindowMessage)
+  resetVisualEditState()
   stopStream()
 })
 </script>
@@ -463,17 +541,39 @@ onBeforeUnmount(() => {
           </a-spin>
         </div>
 
-        <PromptInputBox
-          v-model="inputMessage"
-          variant="chat"
-          placeholder="请描述你想生成的网站，越详细效果越好哦"
-          :loading="isGenerating"
-          :disabled="isGenerating"
-          :disable-submit="!inputMessage.trim()"
-          :min-rows="3"
-          :max-rows="6"
-          @submit="handleSend"
-        />
+        <div class="chat-input-area">
+          <a-alert
+            v-if="selectedElementInfo"
+            class="selected-element-alert"
+            type="info"
+            show-icon
+            closable
+            :message="selectedElementAlertText"
+            @close="clearSelectedElement"
+          />
+          <PromptInputBox
+            v-model="inputMessage"
+            variant="chat"
+            placeholder="请描述你想生成的网站，越详细效果越好哦"
+            :loading="isGenerating"
+            :disabled="isGenerating"
+            :disable-submit="!inputMessage.trim()"
+            :min-rows="3"
+            :max-rows="6"
+            @submit="handleSend"
+          >
+            <template #actions>
+              <a-button
+                class="edit-mode-btn"
+                :type="isEditMode ? 'primary' : 'default'"
+                :disabled="!canPreview || isGenerating"
+                @click="handleToggleEditMode"
+              >
+                {{ isEditMode ? '退出编辑' : '编辑' }}
+              </a-button>
+            </template>
+          </PromptInputBox>
+        </div>
       </div>
 
       <div class="preview-panel">
@@ -508,10 +608,12 @@ onBeforeUnmount(() => {
         </div>
         <div v-if="canPreview" class="preview-frame-wrap">
           <iframe
+            ref="previewFrameRef"
             :key="previewKey"
             class="preview-frame"
             :src="previewUrl"
             title="应用预览"
+            @load="handleIframeLoad"
           />
         </div>
         <div v-else class="preview-empty">
@@ -653,6 +755,25 @@ onBeforeUnmount(() => {
   font-family: inherit;
   font-size: 14px;
   line-height: 1.6;
+}
+
+.chat-input-area {
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-element-alert {
+  margin: 0 16px 8px;
+}
+
+.edit-mode-btn {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 20px;
+}
+
+.chat-input-area :deep(.prompt-input-box.is-chat) {
+  margin-top: 0;
 }
 
 .preview-panel {

@@ -50,6 +50,9 @@ function handleSubmit() {
       @pressEnter.exact.prevent="handleSubmit"
     />
     <div class="prompt-actions">
+      <div class="prompt-actions-extra">
+        <slot name="actions" />
+      </div>
       <a-button
         class="send-btn"
         type="primary"
@@ -102,7 +105,14 @@ function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 8px;
+}
+
+.prompt-actions-extra {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .send-btn {
