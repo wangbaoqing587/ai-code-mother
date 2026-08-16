@@ -8,7 +8,7 @@ import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
  * 代码解析执行器
  * 根据代码生成类型执行相应的解析逻辑
  *
- * @author yupi
+ * @author <a href="https://github.com/wangbaoqing587">王包青</a>
  */
 public class CodeParserExecutor {
 

@@ -3,7 +3,7 @@ package com.wbq.aicodemother.core.parser;
 /**
  * 代码解析器策略接口
  *
- * @author yupi
+ * @author <a href="https://github.com/wangbaoqing587">王包青</a>
  */
 public interface CodeParser<T> {
 

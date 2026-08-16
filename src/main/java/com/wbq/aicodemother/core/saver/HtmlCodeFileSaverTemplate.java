@@ -9,7 +9,7 @@ import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 /**
  * HTML代码文件保存器
  *
- * @author yupi
+ * @author <a href="https://github.com/wangbaoqing587">王包青</a>
  */
 public class HtmlCodeFileSaverTemplate extends CodeFileSaverTemplate<HtmlCodeResult> {
 
