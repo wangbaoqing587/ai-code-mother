@@ -16,6 +16,7 @@ import { formatCodeGenType, getCodeGenTypeOption } from '@/constants/codeGenType
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
+import { parseRouteParamId } from '@/utils/route'
 import {
   buildPromptWithElement,
   createVisualEditor,
@@ -76,13 +77,10 @@ const selectedElementAlertText = computed(() => {
   return `已选中 ${tag}（${info.selector}），当前内容：${content}`
 })
 
-const appId = computed(() => {
-  const id = route.params.id
-  return Array.isArray(id) ? id[0] ?? '' : (id ?? '')
-})
+const appId = computed(() => parseRouteParamId(route.params.id))
 const previewUrl = computed(() => {
-  const { codeGenType, id } = appInfo.value
-  return codeGenType && id ? getStaticPreviewUrl(codeGenType, id) : ''
+  const { codeGenType } = appInfo.value
+  return codeGenType && appId.value ? getStaticPreviewUrl(codeGenType, appId.value) : ''
 })
 const canPreview = computed(() => showPreview.value && !!previewUrl.value)
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
@@ -289,6 +287,9 @@ async function sendMessage(rawMessage: string) {
 }
 
 async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
+  if (!appId.value) {
+    return
+  }
   stopStream()
   let fullContent = ''
 
@@ -374,7 +375,7 @@ async function handleDownload() {
   isDownloading.value = true
   try {
     const res = await downloadAppCode(
-      { appId: appId.value as unknown as number },
+      { appId: appId.value },
       { responseType: 'blob' },
     )
     const blob = res.data as Blob

@@ -1,14 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '@/pages/HomePage.vue'
-import UserLoginPage from '@/pages/user/UserLoginPage.vue'
-import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
-import UserInfoPage from '@/pages/user/UserInfoPage.vue'
-import UserManagePage from '@/pages/admin/UserManagePage.vue'
-import AppManagePage from '@/pages/admin/AppManagePage.vue'
-import ChatManagePage from '@/pages/admin/ChatManagePage.vue'
-import AppChatPage from '@/pages/app/AppChatPage.vue'
-import AppEditPage from '@/pages/app/AppEditPage.vue'
-import NoAuthPage from '@/pages/NoAuthPage.vue'
 import { accessConfig } from '@/access/accessConfig'
 import { setupAccessGuard } from '@/access'
 
@@ -18,7 +8,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomePage,
+      component: () => import('@/pages/HomePage.vue'),
       meta: {
         access: accessConfig.home,
       },
@@ -26,7 +16,7 @@ const router = createRouter({
     {
       path: '/user/login',
       name: 'userLogin',
-      component: UserLoginPage,
+      component: () => import('@/pages/user/UserLoginPage.vue'),
       meta: {
         access: accessConfig.userLogin,
       },
@@ -34,7 +24,7 @@ const router = createRouter({
     {
       path: '/user/register',
       name: 'userRegister',
-      component: UserRegisterPage,
+      component: () => import('@/pages/user/UserRegisterPage.vue'),
       meta: {
         access: accessConfig.userRegister,
       },
@@ -42,7 +32,7 @@ const router = createRouter({
     {
       path: '/user/info',
       name: 'userInfo',
-      component: UserInfoPage,
+      component: () => import('@/pages/user/UserInfoPage.vue'),
       meta: {
         access: accessConfig.userInfo,
       },
@@ -50,7 +40,7 @@ const router = createRouter({
     {
       path: '/app/chat/:id',
       name: 'appChat',
-      component: AppChatPage,
+      component: () => import('@/pages/app/AppChatPage.vue'),
       meta: {
         access: accessConfig.appChat,
         hideFooter: true,
@@ -59,7 +49,7 @@ const router = createRouter({
     {
       path: '/app/edit/:id',
       name: 'appEdit',
-      component: AppEditPage,
+      component: () => import('@/pages/app/AppEditPage.vue'),
       meta: {
         access: accessConfig.appEdit,
       },
@@ -67,7 +57,7 @@ const router = createRouter({
     {
       path: '/admin/userManage',
       name: 'userManage',
-      component: UserManagePage,
+      component: () => import('@/pages/admin/UserManagePage.vue'),
       meta: {
         access: accessConfig.userManage,
       },
@@ -75,7 +65,7 @@ const router = createRouter({
     {
       path: '/admin/appManage',
       name: 'appManage',
-      component: AppManagePage,
+      component: () => import('@/pages/admin/AppManagePage.vue'),
       meta: {
         access: accessConfig.appManage,
       },
@@ -83,7 +73,7 @@ const router = createRouter({
     {
       path: '/admin/chatManage',
       name: 'chatManage',
-      component: ChatManagePage,
+      component: () => import('@/pages/admin/ChatManagePage.vue'),
       meta: {
         access: accessConfig.chatManage,
       },
@@ -91,7 +81,7 @@ const router = createRouter({
     {
       path: '/401',
       name: 'noAuth',
-      component: NoAuthPage,
+      component: () => import('@/pages/NoAuthPage.vue'),
       meta: {
         access: accessConfig.noAuth,
       },

@@ -16,6 +16,7 @@ import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { formatCodeGenType } from '@/constants/codeGenType'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { compressImage } from '@/utils/image'
+import { parseRouteParamId } from '@/utils/route'
 import { formatDateTime } from '@/utils/time'
 
 const MAX_COVER_SIZE = 2 * 1024 * 1024
@@ -35,22 +36,19 @@ const formState = reactive({
   priority: undefined as number | undefined,
 })
 
-const appId = computed(() => {
-  const id = route.params.id
-  return Array.isArray(id) ? id[0] ?? '' : (id ?? '')
-})
+const appId = computed(() => parseRouteParamId(route.params.id))
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
 const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
 const canEdit = computed(() => isAdmin.value || isOwner.value)
 const creatorName = computed(() => appInfo.value.user?.userName || '未知用户')
 const creatorAvatar = computed(() => appInfo.value.user?.userAvatar || '')
 const accessUrl = computed(() => {
-  const { deployKey, codeGenType, id } = appInfo.value
+  const { deployKey, codeGenType } = appInfo.value
   if (deployKey) {
     return getDeployUrl(deployKey, codeGenType)
   }
-  if (codeGenType && id) {
-    return getStaticPreviewUrl(codeGenType, id)
+  if (codeGenType && appId.value) {
+    return getStaticPreviewUrl(codeGenType, appId.value)
   }
   return ''
 })

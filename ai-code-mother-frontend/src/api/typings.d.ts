@@ -5,14 +5,14 @@ declare namespace API {
   }
 
   type AppAdminUpdateRequest = {
-    id?: number
+    id?: number | string
     appName?: string
     cover?: string
     priority?: number
   }
 
   type AppDeployRequest = {
-    appId?: number
+    appId?: number | string
   }
 
   type AppQueryRequest = {
@@ -31,7 +31,7 @@ declare namespace API {
   }
 
   type AppUpdateRequest = {
-    id?: number
+    id?: number | string
     appName?: string
   }
 
@@ -140,19 +140,19 @@ declare namespace API {
   }
 
   type DeleteRequest = {
-    id?: number
+    id?: number | string
   }
 
   type downloadAppCodeParams = {
-    appId: number
+    appId: number | string
   }
 
   type getAppByIdByAdminParams = {
-    id: number
+    id: number | string
   }
 
   type getAppVOByIdParams = {
-    id: number
+    id: number | string
   }
 
   type getInfoParams = {
@@ -168,7 +168,7 @@ declare namespace API {
   }
 
   type listAppChatHistoryParams = {
-    appId: number
+    appId: number | string
     pageSize?: number
     lastCreateTime?: string
   }

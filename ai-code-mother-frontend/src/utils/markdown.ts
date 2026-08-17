@@ -14,7 +14,10 @@ const md = new MarkdownIt({
   html: false,
   linkify: true,
   breaks: true,
-  highlight(str, lang) {
+})
+
+md.set({
+  highlight(str: string, lang: string): string {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return (

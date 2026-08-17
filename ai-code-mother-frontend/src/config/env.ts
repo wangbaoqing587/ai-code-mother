@@ -22,7 +22,7 @@ export const getDeployUrl = (deployKey: string, codeGenType?: string) => {
 }
 
 // 获取静态资源预览URL
-export const getStaticPreviewUrl = (codeGenType: string, appId: string) => {
+export const getStaticPreviewUrl = (codeGenType: string, appId: number | string) => {
   const baseUrl = `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
   if (codeGenType === CODE_GEN_TYPE_ENUM.VUE_PROJECT) {
     return `${baseUrl}dist/index.html`

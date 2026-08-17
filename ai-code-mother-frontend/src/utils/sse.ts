@@ -10,11 +10,11 @@ export interface StreamChatHandlers {
  * 通过 SSE（EventSource）流式调用 /app/chat/gen/code
  */
 export function generateCode(
-  params: { appId: string; message: string },
+  params: { appId: number | string; message: string },
   handlers: StreamChatHandlers,
 ) {
   const search = new URLSearchParams({
-    appId: params.appId,
+    appId: String(params.appId),
     message: params.message,
   })
   const url = `${API_BASE_URL}/app/chat/gen/code?${search.toString()}`
