@@ -106,10 +106,11 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
                     chatMemory.add(UserMessage.from(history.getMessage()));
                     loadedCount++;
                 } else if (ChatHistoryMessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
-                    if (StrUtil.isBlank(history.getMessage())) {
+                    String sanitized = sanitizeAiHistoryMessage(history.getMessage());
+                    if (StrUtil.isBlank(sanitized)) {
                         continue;
                     }
-                    chatMemory.add(AiMessage.from(history.getMessage()));
+                    chatMemory.add(AiMessage.from(sanitized));
                     loadedCount++;
                 }
             }
@@ -119,6 +120,18 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             log.error("加载对话历史到记忆中失败, appId: {}, error: {}", appId, e.getMessage(), e);
             return 0;
         }
+    }
+
+    // 清理AI历史消息中的工具调用和选择工具信息
+    private String sanitizeAiHistoryMessage(String message) {
+        if (StrUtil.isBlank(message)) {
+            return message;
+        }
+        return message
+                .replaceAll("(?s)\\n*\\[选择工具\\][^\\n]*\\n*", "\n")
+                .replaceAll("(?s)\\n*\\[工具调用\\].*?(?=\\n\\n|\\n*\\[工具调用\\]|\\n*\\[选择工具\\]|$)", "\n")
+                .replaceAll("\\n{3,}", "\n\n")
+                .trim();
     }
 
     @Override
