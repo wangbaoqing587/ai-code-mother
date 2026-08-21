@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.wbq.aicodemother.ai.guardrail.PromptSafetyInputGuardrail;
+import com.wbq.aicodemother.ai.guardrail.RetryOutputGuardrail;
 import com.wbq.aicodemother.ai.tools.*;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
@@ -11,6 +12,7 @@ import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 import com.wbq.aicodemother.service.ChatHistoryService;
 import com.wbq.aicodemother.utils.SpringContextUtil;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.guardrail.config.OutputGuardrailsConfig;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -82,6 +84,9 @@ public class AiCodeGeneratorServiceFactory {
      */
     private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
         log.info("为 appId: {} 创建新的 AI 服务实例", appId);
+        OutputGuardrailsConfig outputGuardrailsConfig = OutputGuardrailsConfig.builder()
+                .maxRetries(3)
+                .build();
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
@@ -106,6 +111,9 @@ public class AiCodeGeneratorServiceFactory {
                         ))
                         // 输入护轨
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        // 输出护轨
+                        // .outputGuardrails(new RetryOutputGuardrail()) // 为了流式输出，这里不使用
+                        // .outputGuardrailsConfig(outputGuardrailsConfig)
                         .build();
             }
             case HTML, MULTI_FILE -> {
@@ -115,6 +123,11 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
+                        // 输入护轨
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
+                        // 输出护轨
+                        // .outputGuardrails(new RetryOutputGuardrail()) // 为了流式输出，这里不使用
+                        // .outputGuardrailsConfig(outputGuardrailsConfig)
                         .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
