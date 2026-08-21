@@ -20,6 +20,8 @@ import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 import com.wbq.aicodemother.model.vo.AppVO;
+import com.wbq.aicodemother.ratelimit.annotation.RateLimit;
+import com.wbq.aicodemother.ratelimit.enums.RateLimitType;
 import com.wbq.aicodemother.service.AppService;
 import com.wbq.aicodemother.service.ProjectDownloadService;
 import com.wbq.aicodemother.service.UserService;
@@ -67,6 +69,7 @@ public class AppController {
      * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 3, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        HttpServletRequest request) {

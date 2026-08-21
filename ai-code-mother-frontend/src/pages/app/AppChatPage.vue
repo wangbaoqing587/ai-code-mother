@@ -322,6 +322,16 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
           await scrollToBottom()
         }, 1000)
       },
+      onBusinessError: (errorMessage) => {
+        const aiMessage = messages.value[aiMessageIndex]
+        if (aiMessage) {
+          aiMessage.content = `❌ ${errorMessage}`
+          aiMessage.isStreaming = false
+        }
+        isGenerating.value = false
+        closeStream = null
+        message.error(errorMessage)
+      },
       onError: (error) => {
         const aiMessage = messages.value[aiMessageIndex]
         if (aiMessage) {

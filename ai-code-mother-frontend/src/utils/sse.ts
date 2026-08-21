@@ -4,6 +4,7 @@ export interface StreamChatHandlers {
   onMessage: (chunk: string) => void
   onDone: () => void
   onError: (error: Error) => void
+  onBusinessError?: (errorMessage: string) => void
 }
 
 /**
@@ -60,7 +61,12 @@ export function generateCode(
     finish()
     try {
       const errorData = JSON.parse((event as MessageEvent).data) as { message?: string }
-      handlers.onError(new Error(errorData.message || '生成过程中出现错误'))
+      const errorMessage = errorData.message || '生成过程中出现错误'
+      if (handlers.onBusinessError) {
+        handlers.onBusinessError(errorMessage)
+      } else {
+        handlers.onError(new Error(errorMessage))
+      }
     } catch {
       handlers.onError(new Error('服务器返回错误'))
     }
