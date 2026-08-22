@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { deleteApp, deleteAppByAdmin, deployApp, downloadAppCode, getAppVoById } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { ACCESS_ENUM } from '@/access/accessEnum'
-import { avatarChatbot, iconWeb } from '@/assets'
+import { avatarChatbot, iconPageEdit, iconPageOpen, iconWeb } from '@/assets'
 import AppDetailModal from '@/components/AppDetailModal.vue'
+import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import DeploySuccessModal from '@/components/DeploySuccessModal.vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
-import { formatCodeGenType, getCodeGenTypeOption } from '@/constants/codeGenType'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
+import { showConfirmModal } from '@/utils/modal'
 import { parseRouteParamId } from '@/utils/route'
 import {
   buildPromptWithElement,
@@ -87,13 +88,6 @@ const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM
 const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
 const canManage = computed(() => isAdmin.value || isOwner.value)
 const userAvatar = computed(() => loginUserStore.loginUser.userAvatar || '')
-const codeGenTypeTag = computed(() => {
-  const option = getCodeGenTypeOption(appInfo.value.codeGenType)
-  return {
-    label: option?.label || formatCodeGenType(appInfo.value.codeGenType),
-    color: option?.color || '#8c8c8c',
-  }
-})
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -418,7 +412,8 @@ function handleDeleteApp() {
   if (!appId.value) {
     return
   }
-  Modal.confirm({
+  showConfirmModal({
+    variant: 'mint',
     title: '确认删除该应用？',
     content: `应用：${appInfo.value.appName || appId.value}`,
     okText: '确定',
@@ -489,19 +484,17 @@ onBeforeUnmount(() => {
         <a-spin v-if="isLoadingApp" size="small" />
         <template v-else>
           <span class="app-name-text">{{ appInfo.appName || '未命名应用' }}</span>
-          <span
-            v-if="appInfo.codeGenType"
-            class="app-type-tag"
-            :style="{ background: codeGenTypeTag.color + '22', color: codeGenTypeTag.color }"
-          >
-            {{ codeGenTypeTag.label }}
-          </span>
+          <CodeGenTypeTag v-if="appInfo.codeGenType" :code-gen-type="appInfo.codeGenType" />
         </template>
       </div>
       <a-space>
-        <a-button @click="isDetailOpen = true">应用详情</a-button>
-        <a-button :loading="isDownloading" @click="handleDownload">下载代码</a-button>
-        <a-button type="primary" :loading="isDeploying" @click="handleDeploy">部署</a-button>
+        <a-button class="header-btn header-btn-outline" @click="isDetailOpen = true">应用详情</a-button>
+        <a-button class="header-btn header-btn-outline" :loading="isDownloading" @click="handleDownload">
+          下载代码
+        </a-button>
+        <a-button class="header-btn header-btn-primary" type="primary" :loading="isDeploying" @click="handleDeploy">
+          部署
+        </a-button>
       </a-space>
     </div>
 
@@ -520,6 +513,7 @@ onBeforeUnmount(() => {
           <a-spin :spinning="isLoadingHistory">
             <div v-if="hasMoreHistory" class="load-more-wrap">
               <a-button
+                class="load-more-btn"
                 type="link"
                 :loading="isLoadingMoreHistory"
                 @click="handleLoadMoreHistory"
@@ -535,10 +529,12 @@ onBeforeUnmount(() => {
               :class="item.role === 'user' ? 'is-user' : 'is-ai'"
             >
               <UserAvatar
+                v-if="item.role === 'ai'"
                 class="message-avatar"
                 :size="36"
-                :src="item.role === 'ai' ? avatarChatbot : userAvatar"
+                :src="avatarChatbot"
               />
+              <div v-else class="message-avatar-placeholder" aria-hidden="true" />
               <div class="message-bubble" :class="item.role">
                 <MarkdownRenderer
                   v-if="item.role === 'ai' && item.content"
@@ -548,6 +544,13 @@ onBeforeUnmount(() => {
                   item.content || (item.isStreaming ? '生成中...' : '')
                 }}</pre>
               </div>
+              <UserAvatar
+                v-if="item.role === 'user'"
+                class="message-avatar"
+                :size="36"
+                :src="userAvatar"
+              />
+              <div v-else class="message-avatar-placeholder" aria-hidden="true" />
             </div>
           </a-spin>
         </div>
@@ -572,50 +575,37 @@ onBeforeUnmount(() => {
             :min-rows="3"
             :max-rows="6"
             @submit="handleSend"
-          >
-            <template #actions>
-              <a-button
-                class="edit-mode-btn"
-                :type="isEditMode ? 'primary' : 'default'"
-                :disabled="!canPreview || isGenerating"
-                @click="handleToggleEditMode"
-              >
-                {{ isEditMode ? '退出编辑' : '编辑' }}
-              </a-button>
-            </template>
-          </PromptInputBox>
+          />
         </div>
       </div>
 
       <div class="preview-panel">
         <div class="preview-toolbar">
-          <span class="preview-title">生成后的网页展示</span>
-          <a
-            class="preview-open-link"
-            :href="canPreview ? previewUrl : undefined"
-            :class="{ 'is-disabled': !canPreview }"
-            target="_blank"
-            rel="noopener noreferrer"
-            @click="handleOpenPreview"
-          >
-            <svg
-              class="preview-open-icon"
-              viewBox="0 0 16 16"
-              width="14"
-              height="14"
-              aria-hidden="true"
+          <span class="preview-title">网页预览</span>
+          <div class="preview-toolbar-actions">
+            <button
+              type="button"
+              class="preview-action-btn"
+              :class="{ 'is-active': isEditMode }"
+              :disabled="!canPreview || isGenerating"
+              @click="handleToggleEditMode"
             >
-              <path
-                fill="currentColor"
-                d="M6.5 2a.5.5 0 0 0 0 1H12.3L5.15 10.15a.5.5 0 1 0 .7.7L13 3.71V9.5a.5.5 0 0 0 1 0v-7A.5.5 0 0 0 13.5 2h-7z"
-              />
-              <path
-                fill="currentColor"
-                d="M3 4.5A1.5 1.5 0 0 1 4.5 3H8a.5.5 0 0 1 0 1H4.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V8a.5.5 0 0 1 1 0v3.5A1.5 1.5 0 0 1 11.5 13h-7A1.5 1.5 0 0 1 3 11.5v-7z"
-              />
-            </svg>
-            新窗口打开
-          </a>
+              <img :src="iconPageEdit" alt="" class="preview-action-icon" />
+              {{ isEditMode ? '退出编辑' : '编辑' }}
+            </button>
+            <a
+              class="preview-action-btn"
+              :class="{ 'is-disabled': !canPreview }"
+              :href="canPreview ? previewUrl : undefined"
+              :tabindex="canPreview ? 0 : -1"
+              target="_blank"
+              rel="noopener noreferrer"
+              @click="handleOpenPreview"
+            >
+              <img :src="iconPageOpen" alt="" class="preview-action-icon" />
+              新窗口打开
+            </a>
+          </div>
         </div>
         <div v-if="canPreview" class="preview-frame-wrap">
           <iframe
@@ -642,7 +632,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: calc(100vh - 64px);
   box-sizing: border-box;
-  background: #fff;
+  background: transparent;
 }
 
 .chat-header {
@@ -650,10 +640,11 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  height: 52px;
-  padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  height: 56px;
+  padding: 0 20px;
+  background: rgba(255, 255, 255, 0.82);
+  border-bottom: 1px solid rgba(136, 216, 176, 0.28);
+  backdrop-filter: blur(10px);
 }
 
 .app-name {
@@ -663,6 +654,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   font-size: 16px;
   font-weight: 600;
+  color: #1a2e35;
 }
 
 .app-name-text {
@@ -671,19 +663,41 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.app-type-tag {
-  flex-shrink: 0;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 20px;
-}
-
 .app-logo {
   width: 28px;
   height: 28px;
   object-fit: contain;
+}
+
+.header-btn {
+  height: 34px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.header-btn-outline {
+  border: 1.5px solid rgba(136, 216, 176, 0.55) !important;
+  background: #fff !important;
+  color: #334155 !important;
+  box-shadow: 0 2px 8px rgba(136, 216, 176, 0.1);
+}
+
+.header-btn-outline:hover {
+  border-color: rgba(91, 196, 160, 0.75) !important;
+  color: #2d9a78 !important;
+  background: #f0fdf7 !important;
+}
+
+.header-btn-primary {
+  background: #5bc4a0 !important;
+  border-color: #5bc4a0 !important;
+  box-shadow: 0 4px 12px rgba(91, 196, 160, 0.32);
+}
+
+.header-btn-primary:hover {
+  background: #4db892 !important;
+  border-color: #4db892 !important;
 }
 
 .chat-body {
@@ -692,7 +706,7 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-  background: #fff;
+  gap: 0;
 }
 
 .chat-panel {
@@ -700,14 +714,14 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: #fff;
-  border-right: 1px solid #f0f0f0;
+  background: rgba(255, 255, 255, 0.55);
+  border-right: 1px solid rgba(136, 216, 176, 0.22);
 }
 
 .messages-area {
   flex: 1;
   overflow-y: auto;
-  padding: 12px 16px;
+  padding: 16px 18px;
 }
 
 .load-more-wrap {
@@ -716,47 +730,54 @@ onBeforeUnmount(() => {
   margin-bottom: 8px;
 }
 
+.load-more-btn {
+  color: #2d9a78 !important;
+}
+
+.load-more-btn:hover {
+  color: #5bc4a0 !important;
+}
+
 .messages-empty {
   padding: 48px 0;
   text-align: center;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 .message-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  column-gap: 10px;
   align-items: flex-start;
-  gap: 10px;
   margin-bottom: 16px;
-}
-
-.message-row.is-user {
-  flex-direction: row-reverse;
-}
-
-.message-row.is-ai {
-  flex-direction: row;
 }
 
 .message-avatar {
   flex-shrink: 0;
 }
 
+.message-avatar-placeholder {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
 .message-bubble {
-  max-width: calc(88% - 46px);
   min-width: 0;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 16px;
   overflow-x: auto;
 }
 
 .message-bubble.user {
-  background: #f0f0f0;
+  background: rgba(136, 216, 176, 0.22);
+  border: 1px solid rgba(136, 216, 176, 0.35);
 }
 
 .message-bubble.ai {
   background: #fff;
-  border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(136, 216, 176, 0.28);
+  box-shadow: 0 4px 14px rgba(136, 216, 176, 0.1);
 }
 
 .message-content {
@@ -766,21 +787,27 @@ onBeforeUnmount(() => {
   font-family: inherit;
   font-size: 14px;
   line-height: 1.6;
+  color: #334155;
 }
 
 .chat-input-area {
   display: flex;
   flex-direction: column;
+  padding-top: 4px;
 }
 
 .selected-element-alert {
   margin: 0 16px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(136, 216, 176, 0.35);
+  background: rgba(240, 253, 247, 0.9);
 }
 
-.edit-mode-btn {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 20px;
+.preview-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #1a2e35;
 }
 
 .chat-input-area :deep(.prompt-input-box.is-chat) {
@@ -792,7 +819,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: #eef2f6;
+  background: rgba(240, 247, 244, 0.85);
 }
 
 .preview-toolbar {
@@ -800,39 +827,66 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  height: 44px;
-  padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #f0f0f0;
+  height: 48px;
+  padding: 0 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom: 1px solid rgba(136, 216, 176, 0.22);
 }
 
-.preview-title {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.88);
-}
-
-.preview-open-link {
-  display: inline-flex;
+.preview-toolbar-actions {
+  display: flex;
   align-items: center;
   gap: 4px;
-  color: #1677ff;
-  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.preview-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
-.preview-open-link:hover {
-  color: #4096ff;
+.preview-action-btn:hover:not(:disabled):not(.is-disabled) {
+  background: rgba(136, 216, 176, 0.14);
+  color: #2d9a78;
 }
 
-.preview-open-link.is-disabled {
-  color: rgba(0, 0, 0, 0.25);
+.preview-action-btn.is-active {
+  background: rgba(91, 196, 160, 0.16);
+  color: #2d9a78;
+}
+
+.preview-action-btn:disabled,
+.preview-action-btn.is-disabled {
+  color: #cbd5e1;
   cursor: not-allowed;
+  pointer-events: none;
 }
 
-.preview-open-icon {
-  display: block;
+.preview-action-icon {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  object-fit: contain;
+}
+
+.preview-action-btn:disabled .preview-action-icon,
+.preview-action-btn.is-disabled .preview-action-icon {
+  opacity: 0.45;
 }
 
 .preview-frame-wrap,
@@ -840,20 +894,26 @@ onBeforeUnmount(() => {
   flex: 1;
   min-height: 0;
   width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .preview-frame {
   width: 100%;
   height: 100%;
   border: 0;
+  border-radius: 14px;
   background: #fff;
+  box-shadow:
+    0 8px 24px rgba(136, 216, 176, 0.14),
+    0 2px 8px rgba(26, 46, 53, 0.06);
 }
 
 .preview-empty {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
 }
 
 @media (max-width: 960px) {
@@ -864,7 +924,7 @@ onBeforeUnmount(() => {
 
   .chat-panel {
     border-right: none;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid rgba(136, 216, 176, 0.22);
   }
 }
 </style>

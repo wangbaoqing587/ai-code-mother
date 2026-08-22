@@ -1,0 +1,264 @@
+.mint-modal-wrap .ant-modal-content,
+.mint-confirm-wrap .ant-modal-content {
+  padding: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(136, 216, 176, 0.35);
+  box-shadow:
+    0 16px 48px rgba(136, 216, 176, 0.18),
+    0 4px 12px rgba(26, 46, 53, 0.06);
+}
+
+.mint-modal-wrap .ant-modal-header {
+  padding: 20px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(136, 216, 176, 0.2);
+  background: linear-gradient(180deg, rgba(245, 251, 248, 0.95) 0%, #fff 100%);
+}
+
+.mint-modal-wrap .ant-modal-title,
+.mint-confirm-wrap .ant-modal-confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a2e35;
+}
+
+.mint-modal-wrap .ant-modal-close {
+  top: 18px;
+  color: #94a3b8;
+}
+
+.mint-modal-wrap .ant-modal-close:hover {
+  color: #2d9a78;
+  background: rgba(136, 216, 176, 0.12);
+}
+
+.mint-modal-wrap .ant-modal-body {
+  padding: 18px 24px 22px;
+}
+
+.mint-confirm-wrap .ant-modal-body {
+  padding: 22px 24px 20px;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-body > .anticon {
+  color: #5bc4a0;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-content {
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns {
+  margin-top: 20px;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-default {
+  border: 1.5px solid rgba(136, 216, 176, 0.55);
+  color: #334155;
+  background: #fff;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-default:hover {
+  border-color: rgba(91, 196, 160, 0.75) !important;
+  color: #2d9a78 !important;
+  background: #f0fdf7 !important;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-primary {
+  background: #5bc4a0;
+  border-color: #5bc4a0;
+  box-shadow: 0 4px 12px rgba(91, 196, 160, 0.28);
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-primary:hover {
+  background: #4db892 !important;
+  border-color: #4db892 !important;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-dangerous {
+  background: #fff;
+  border: 1.5px solid rgba(248, 113, 113, 0.45);
+  color: #dc6b6b;
+  box-shadow: none;
+}
+
+.mint-confirm-wrap .ant-modal-confirm-btns .ant-btn-dangerous:hover {
+  background: #fef2f2 !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  color: #ef4444 !important;
+}
+
+.admin-modal-wrap .ant-modal-content,
+.admin-confirm-wrap .ant-modal-content {
+  padding: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(129, 212, 250, 0.4);
+  box-shadow:
+    0 16px 48px rgba(129, 212, 250, 0.16),
+    0 4px 12px rgba(26, 46, 53, 0.06);
+}
+
+.admin-modal-wrap .ant-modal-header {
+  padding: 20px 24px 14px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(129, 212, 250, 0.22);
+  background: linear-gradient(180deg, rgba(243, 248, 253, 0.95) 0%, #fff 100%);
+}
+
+.admin-modal-wrap .ant-modal-title,
+.admin-confirm-wrap .ant-modal-confirm-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a2e35;
+}
+
+.admin-modal-wrap .ant-modal-close {
+  top: 18px;
+  color: #94a3b8;
+}
+
+.admin-modal-wrap .ant-modal-close:hover {
+  color: #3b82c4;
+  background: rgba(129, 212, 250, 0.15);
+}
+
+.admin-modal-wrap .ant-modal-body {
+  padding: 18px 24px 8px;
+}
+
+.admin-modal-wrap .ant-modal-footer {
+  padding: 12px 24px 20px;
+  border-top: 1px solid rgba(129, 212, 250, 0.2);
+  background: #fff;
+}
+
+.admin-modal-wrap .ant-modal-footer .ant-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-modal-wrap .ant-modal-footer .ant-btn-default {
+  border: 1.5px solid rgba(129, 212, 250, 0.55);
+  color: #475569;
+  background: #fff;
+}
+
+.admin-modal-wrap .ant-modal-footer .ant-btn-default:hover {
+  border-color: rgba(91, 168, 232, 0.65) !important;
+  color: #3b82c4 !important;
+  background: #f5faff !important;
+}
+
+.admin-modal-wrap .ant-modal-footer .ant-btn-primary {
+  background: #6bb5f0;
+  border-color: #6bb5f0;
+  box-shadow: 0 4px 12px rgba(107, 181, 240, 0.28);
+}
+
+.admin-modal-wrap .ant-modal-footer .ant-btn-primary:hover {
+  background: #5ba8e8 !important;
+  border-color: #5ba8e8 !important;
+}
+
+.admin-modal-wrap .ant-form-item-label > label {
+  color: #475569;
+  font-weight: 500;
+}
+
+.admin-modal-wrap .ant-input,
+.admin-modal-wrap .ant-input-affix-wrapper,
+.admin-modal-wrap .ant-select-selector {
+  border-radius: 10px !important;
+  border-color: rgba(129, 212, 250, 0.45) !important;
+}
+
+.admin-modal-wrap .ant-input-affix-wrapper .ant-input {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.admin-modal-wrap .ant-input:focus,
+.admin-modal-wrap .ant-input-affix-wrapper-focused,
+.admin-modal-wrap .ant-select-focused .ant-select-selector {
+  border-color: rgba(129, 212, 250, 0.55) !important;
+  box-shadow: none !important;
+}
+
+.admin-confirm-wrap .ant-modal-body {
+  padding: 22px 24px 20px;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-body > .anticon {
+  color: #6bb5f0;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-content {
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns {
+  margin-top: 20px;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-default {
+  border: 1.5px solid rgba(129, 212, 250, 0.55);
+  color: #475569;
+  background: #fff;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-default:hover {
+  border-color: rgba(91, 168, 232, 0.65) !important;
+  color: #3b82c4 !important;
+  background: #f5faff !important;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-primary {
+  background: #6bb5f0;
+  border-color: #6bb5f0;
+  box-shadow: 0 4px 12px rgba(107, 181, 240, 0.28);
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-primary:hover {
+  background: #5ba8e8 !important;
+  border-color: #5ba8e8 !important;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-dangerous {
+  background: #fff;
+  border: 1.5px solid rgba(122, 148, 196, 0.55);
+  color: #6a84b4;
+  box-shadow: none;
+}
+
+.admin-confirm-wrap .ant-modal-confirm-btns .ant-btn-dangerous:hover {
+  background: #f4f7fc !important;
+  border-color: #7a94c4 !important;
+  color: #5a74a4 !important;
+}

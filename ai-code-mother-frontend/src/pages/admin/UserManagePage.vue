@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import type { TableColumnsType } from 'ant-design-vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import AdminPageLayout from '@/components/AdminPageLayout.vue'
 import { deleteUser, listUserVoByPage, updateUser } from '@/api/userController'
+import { showConfirmModal } from '@/utils/modal'
 import { formatDateTime } from '@/utils/time'
 
 const isLoading = ref(false)
@@ -29,15 +31,21 @@ const formState = reactive<API.UserUpdateRequest>({
 })
 
 const columns: TableColumnsType = [
-  { title: 'id', dataIndex: 'id', width: 80 },
-  { title: '账号', dataIndex: 'userAccount' },
-  { title: '用户名', dataIndex: 'userName' },
-  { title: '头像', dataIndex: 'userAvatar', key: 'userAvatar' },
-  { title: '简介', dataIndex: 'userProfile', ellipsis: true },
-  { title: '角色', dataIndex: 'userRole', width: 100 },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 180 },
-  { title: '操作', key: 'action', width: 160 },
+  { title: 'id', dataIndex: 'id', width: '6%', align: 'center' },
+  { title: '账号', dataIndex: 'userAccount', width: '12%', ellipsis: true },
+  { title: '用户名', dataIndex: 'userName', width: '10%', ellipsis: true },
+  { title: '头像', dataIndex: 'userAvatar', key: 'userAvatar', width: '6%', align: 'center' },
+  { title: '简介', dataIndex: 'userProfile', key: 'userProfile', width: '18%', ellipsis: true },
+  { title: '角色', dataIndex: 'userRole', width: '8%', align: 'center' },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: '18%' },
+  { title: '操作', key: 'action', width: '22%', align: 'left' },
 ]
+
+const EMPTY_USER_PROFILE_TEXT = '该用户还没有填写简介'
+
+function formatUserProfile(profile?: string) {
+  return profile?.trim() || EMPTY_USER_PROFILE_TEXT
+}
 
 function isAdminUser(record: API.UserVO) {
   return record.userRole === 'admin'
@@ -115,7 +123,8 @@ function handleDelete(record: API.UserVO) {
   if (isAdminUser(record)) {
     return
   }
-  Modal.confirm({
+  showConfirmModal({
+    variant: 'admin',
     title: '确认删除该用户？',
     content: `账号：${record.userAccount}`,
     okText: '确定',
@@ -139,8 +148,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="user-manage-page">
-    <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
+  <AdminPageLayout title="用户管理">
+    <div class="admin-panel">
+      <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
       <a-form-item label="账号">
         <a-input v-model:value="searchParams.userAccount" placeholder="请输入账号" allow-clear />
       </a-form-item>
@@ -166,12 +176,15 @@ onMounted(() => {
         </a-space>
       </a-form-item>
     </a-form>
+    </div>
 
+    <div class="admin-panel">
     <a-table
       :columns="columns"
       :data-source="dataList"
       :loading="isLoading"
       row-key="id"
+      table-layout="fixed"
       :pagination="{
         current: searchParams.pageNum,
         pageSize: searchParams.pageSize,
@@ -185,22 +198,47 @@ onMounted(() => {
         <template v-if="column.key === 'userAvatar'">
           <UserAvatar :src="(record as API.UserVO).userAvatar" />
         </template>
+        <template v-else-if="column.key === 'userProfile'">
+          <span
+            :class="{ 'empty-profile-text': !((record as API.UserVO).userProfile?.trim()) }"
+          >
+            {{ formatUserProfile((record as API.UserVO).userProfile) }}
+          </span>
+        </template>
         <template v-else-if="column.key === 'createTime'">
           {{ formatDateTime((record as API.UserVO).createTime) }}
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-space v-if="!isAdminUser(record as API.UserVO)">
-            <a-button type="link" @click="openEditModal(record as API.UserVO)">编辑</a-button>
-            <a-button type="link" danger @click="handleDelete(record as API.UserVO)">删除</a-button>
-          </a-space>
+          <div v-if="!isAdminUser(record as API.UserVO)" class="table-action-cell">
+            <a-space :size="8">
+              <a-button
+                size="small"
+                class="table-action-btn table-action-btn--edit"
+                @click="openEditModal(record as API.UserVO)"
+              >
+                编辑
+              </a-button>
+              <a-button
+                size="small"
+                class="table-action-btn table-action-btn--delete"
+                @click="handleDelete(record as API.UserVO)"
+              >
+                删除
+              </a-button>
+            </a-space>
+          </div>
           <span v-else>-</span>
         </template>
       </template>
     </a-table>
+    </div>
 
     <a-modal
       v-model:open="isModalOpen"
       title="编辑用户"
+      wrap-class-name="admin-modal-wrap"
+      ok-text="保存"
+      cancel-text="取消"
       :confirm-loading="isSubmitting"
       @ok="handleSubmit"
     >
@@ -225,17 +263,5 @@ onMounted(() => {
         </a-form-item>
       </a-form>
     </a-modal>
-  </div>
+  </AdminPageLayout>
 </template>
-
-<style scoped>
-.user-manage-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.search-form {
-  row-gap: 12px;
-}
-</style>

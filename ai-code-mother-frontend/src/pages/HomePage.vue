@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { addApp, listAppVoByPageByAdmin, listGoodAppVoByPage, listMyAppVoByPage } from '@/api/appController'
-import { iconLogo } from '@/assets'
+import { iconCoverLogo } from '@/assets'
 import AppListSection from '@/components/AppListSection.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
 import { GOOD_APP_PAGE_SIZE, MY_APP_PAGE_SIZE, QUICK_PROMPTS } from '@/constants/app'
@@ -139,11 +139,13 @@ onMounted(() => {
 
 <template>
   <div class="home-page">
-    <div class="home-bg" aria-hidden="true" />
+    <div class="home-bg" aria-hidden="true">
+      <div class="home-bg-blob home-bg-blob-yellow" />
+    </div>
     <section class="hero-section">
-      <img class="hero-logo" :src="iconLogo" alt="logo" />
-      <h1 class="hero-title">AI 应用生成平台</h1>
-      <p class="hero-subtitle">一句话轻松创建网站应用</p>
+      <img class="hero-logo" :src="iconCoverLogo" alt="logo" />
+      <h1 class="hero-title">星衍-AI 零代码应用生成平台</h1>
+      <p class="hero-subtitle">以灵感为星，衍万千应用</p>
 
       <PromptInputBox
         v-model="prompt"
@@ -151,8 +153,8 @@ onMounted(() => {
         variant="hero"
         placeholder="帮我创建个人博客网站"
         :loading="isCreating"
-        :min-rows="4"
-        :max-rows="8"
+        :min-rows="2"
+        :max-rows="6"
         @submit="handleCreate"
       />
 
@@ -198,7 +200,7 @@ onMounted(() => {
   position: relative;
   width: 100%;
   min-height: calc(100vh - 64px);
-  padding: 56px 24px 72px;
+  padding: 32px 24px 72px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -207,22 +209,45 @@ onMounted(() => {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background:
-    radial-gradient(ellipse 90% 60% at 10% 0%, rgba(14, 165, 233, 0.45), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 90% 10%, rgba(6, 182, 212, 0.35), transparent 50%),
-    radial-gradient(ellipse 50% 40% at 50% 100%, rgba(56, 189, 248, 0.28), transparent 55%),
-    linear-gradient(155deg, #071422 0%, #0b2a45 38%, #0a4d6e 72%, #0e7490 100%);
+  background: linear-gradient(180deg, #f5fbf8 0%, #f0f9ff 45%, #fffef5 100%);
+}
+
+.home-bg::before {
+  content: '';
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  top: -120px;
+  left: -80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(136, 216, 176, 0.45) 0%, transparent 70%);
+  filter: blur(2px);
 }
 
 .home-bg::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 85%);
+  width: 480px;
+  height: 480px;
+  top: 40px;
+  right: -100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(129, 212, 250, 0.35) 0%, transparent 70%);
+}
+
+.home-bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.home-bg-blob-yellow {
+  width: 360px;
+  height: 360px;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 224, 130, 0.28) 0%, transparent 70%);
 }
 
 .hero-section {
@@ -234,80 +259,100 @@ onMounted(() => {
 }
 
 .hero-logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 16px;
+  width: 160px;
+  height: 160px;
   object-fit: contain;
-  filter: drop-shadow(0 8px 24px rgba(56, 189, 248, 0.35));
+  filter: drop-shadow(0 12px 32px rgba(136, 216, 176, 0.35));
 }
 
 .hero-title {
-  margin: 0;
-  font-size: 48px;
+  margin: 8px 0 0;
+  font-size: 44px;
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0.02em;
-  color: #f8fafc;
-  text-shadow: 0 2px 24px rgba(14, 165, 233, 0.35);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #1a2e35;
 }
 
 .hero-subtitle {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   font-size: 18px;
-  color: rgba(226, 242, 255, 0.78);
+  color: #64748b;
 }
 
 .hero-prompt {
-  margin-top: 36px;
+  margin-top: 32px;
 }
 
 .quick-prompts {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
 }
 
 .quick-prompt {
-  height: 36px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  height: 38px;
+  padding: 0 18px;
+  border: 2px solid rgba(136, 216, 176, 0.45);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #e2f2ff;
-  backdrop-filter: blur(8px);
+  background: #fff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  box-shadow:
+    0 4px 12px rgba(136, 216, 176, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
+    box-shadow 0.2s ease,
     transform 0.2s ease;
 }
 
+.quick-prompt:nth-child(2n) {
+  border-color: rgba(129, 212, 250, 0.5);
+  box-shadow:
+    0 4px 12px rgba(129, 212, 250, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(3n) {
+  border-color: rgba(255, 224, 130, 0.65);
+  box-shadow:
+    0 4px 12px rgba(255, 224, 130, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
 .quick-prompt:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: #f0fdf7;
+  border-color: rgba(91, 196, 160, 0.65);
+  box-shadow:
+    0 6px 16px rgba(136, 216, 176, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
 }
 
 @media (max-width: 960px) {
   .hero-title {
-    font-size: 36px;
+    font-size: 34px;
   }
 }
 
 @media (max-width: 640px) {
   .home-page {
-    padding: 40px 16px 56px;
+    padding: 20px 16px 56px;
   }
 
   .hero-title {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .hero-logo {
-    width: 48px;
-    height: 48px;
+    width: 128px;
+    height: 128px;
   }
 
   .hero-subtitle {

@@ -8,11 +8,17 @@ const route = useRoute()
 
 const isHomePage = computed(() => route.name === 'home')
 const isChatPage = computed(() => route.name === 'appChat')
+const isAdminPage = computed(() => String(route.path).startsWith('/admin/'))
+const isUserInfoPage = computed(() => route.name === 'userInfo')
+const isAppEditPage = computed(() => route.name === 'appEdit')
+const isAuthPage = computed(() => route.name === 'userLogin' || route.name === 'userRegister')
 const hideFooter = computed(() => Boolean(route.meta.hideFooter) || isChatPage.value)
 const contentClass = computed(() => ({
   'basic-layout-content': true,
   'is-home': isHomePage.value,
   'is-chat': isChatPage.value,
+  'is-admin': isAdminPage.value,
+  'is-user-info': isUserInfoPage.value || isAuthPage.value || isAppEditPage.value,
 }))
 </script>
 
@@ -42,9 +48,19 @@ const contentClass = computed(() => ({
   background: transparent;
 }
 
+.basic-layout-content.is-admin {
+  padding: 0;
+  background: transparent;
+}
+
+.basic-layout-content.is-user-info {
+  padding: 0;
+  background: transparent;
+}
+
 .basic-layout-content.is-chat {
   padding: 0;
-  background: #f7f8fa;
+  background: linear-gradient(180deg, #f5fbf8 0%, #faf9f7 100%);
 }
 
 @media (max-width: 768px) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
-import { formatCodeGenType } from '@/constants/codeGenType'
 import { formatDateTime } from '@/utils/time'
 
 interface Props {
@@ -23,7 +23,6 @@ const emit = defineEmits<{
 const creatorName = computed(() => props.app.user?.userName || '未知用户')
 const creatorAvatar = computed(() => props.app.user?.userAvatar || '')
 const createTimeText = computed(() => formatDateTime(props.app.createTime))
-const codeGenTypeText = computed(() => formatCodeGenType(props.app.codeGenType))
 
 function handleOpenChange(value: boolean) {
   emit('update:open', value)
@@ -35,59 +34,122 @@ function handleOpenChange(value: boolean) {
     :open="open"
     title="应用详情"
     :footer="null"
-    :width="420"
+    :width="440"
+    wrap-class-name="mint-modal-wrap app-detail-modal-wrap"
     @update:open="handleOpenChange"
   >
-    <div class="detail-section">
-      <div class="detail-label">创建者</div>
-      <div class="detail-creator">
-        <UserAvatar :size="40" :src="creatorAvatar" />
-        <span>{{ creatorName }}</span>
+    <div class="detail-card">
+      <div class="detail-section">
+        <div class="detail-label">创建者</div>
+        <div class="detail-creator">
+          <UserAvatar :size="40" :src="creatorAvatar" />
+          <span class="detail-creator-name">{{ creatorName }}</span>
+        </div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-label">生成类型</div>
+        <div class="detail-value">
+          <CodeGenTypeTag v-if="app.codeGenType" :code-gen-type="app.codeGenType" />
+          <span v-else>-</span>
+        </div>
+      </div>
+      <div class="detail-section detail-section-last">
+        <div class="detail-label">创建时间</div>
+        <div class="detail-value">{{ createTimeText }}</div>
       </div>
     </div>
-    <div class="detail-section">
-      <div class="detail-label">生成类型</div>
-      <div class="detail-value">{{ codeGenTypeText }}</div>
-    </div>
-    <div class="detail-section">
-      <div class="detail-label">创建时间</div>
-      <div class="detail-value">{{ createTimeText }}</div>
-    </div>
     <div v-if="canManage" class="detail-actions">
-      <a-button @click="emit('edit')">修改</a-button>
-      <a-button danger @click="emit('delete')">删除</a-button>
+      <button type="button" class="detail-action-btn detail-action-btn-edit" @click="emit('edit')">
+        修改
+      </button>
+      <button type="button" class="detail-action-btn detail-action-btn-delete" @click="emit('delete')">
+        删除
+      </button>
     </div>
   </a-modal>
 </template>
 
 <style scoped>
+.detail-card {
+  padding: 4px 0 0;
+}
+
 .detail-section {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+}
+
+.detail-section-last {
+  margin-bottom: 0;
 }
 
 .detail-label {
   margin-bottom: 8px;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
 }
 
 .detail-creator {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.detail-creator-name {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #1a2e35;
 }
 
 .detail-value {
   font-size: 15px;
-  color: rgba(0, 0, 0, 0.88);
+  color: #334155;
 }
 
 .detail-actions {
   display: flex;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(136, 216, 176, 0.22);
+}
+
+.detail-action-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.detail-action-btn-edit {
+  border: 1.5px solid rgba(136, 216, 176, 0.55);
+  background: #fff;
+  color: #334155;
+}
+
+.detail-action-btn-edit:hover {
+  border-color: rgba(91, 196, 160, 0.75);
+  color: #2d9a78;
+  background: #f0fdf7;
+}
+
+.detail-action-btn-delete {
+  border: 1.5px solid rgba(248, 113, 113, 0.45);
+  background: #fff;
+  color: #dc6b6b;
+}
+
+.detail-action-btn-delete:hover {
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #ef4444;
+  background: #fef2f2;
 }
 </style>

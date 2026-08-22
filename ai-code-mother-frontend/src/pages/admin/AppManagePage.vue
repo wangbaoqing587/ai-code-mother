@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
-import { message, Modal } from 'ant-design-vue'
+import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import type { TableColumnsType } from 'ant-design-vue'
+import AdminPageLayout from '@/components/AdminPageLayout.vue'
+import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import {
   deleteAppByAdmin,
   listAppVoByPageByAdmin,
   updateAppByAdmin,
 } from '@/api/appController'
 import { GOOD_APP_PRIORITY } from '@/constants/app'
-import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType } from '@/constants/codeGenType'
+import { CODE_GEN_TYPE_OPTIONS } from '@/constants/codeGenType'
+import { showConfirmModal } from '@/utils/modal'
 import { formatDateTime } from '@/utils/time'
 
+const router = useRouter()
 const isLoading = ref(false)
 const dataList = ref<API.AppVO[]>([])
 const total = ref(0)
@@ -29,7 +34,7 @@ const searchParams = reactive<API.AppQueryRequest>({
 })
 
 const columns: TableColumnsType = [
-  { title: 'id', dataIndex: 'id', width: 80 },
+  { title: 'id', dataIndex: 'id', key: 'id', width: 112 },
   { title: '应用名称', dataIndex: 'appName', ellipsis: true },
   { title: '封面', dataIndex: 'cover', key: 'cover', width: 80 },
   { title: '初始化提示词', dataIndex: 'initPrompt', ellipsis: true },
@@ -38,7 +43,7 @@ const columns: TableColumnsType = [
   { title: '创建者', dataIndex: 'user', key: 'user', width: 120 },
   { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 180 },
   { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 180 },
-  { title: '操作', key: 'action', width: 260 },
+  { title: '操作', key: 'action', width: 320, align: 'left' },
 ]
 
 async function fetchData() {
@@ -84,7 +89,7 @@ function handleEdit(record: API.AppVO) {
   if (!record.id) {
     return
   }
-  window.open(`/app/edit/${record.id}`, '_blank')
+  router.push(`/app/edit/${record.id}`)
 }
 
 function isFeaturedApp(record: API.AppVO) {
@@ -95,7 +100,8 @@ function handleFeatured(record: API.AppVO) {
   if (!record.id) {
     return
   }
-  Modal.confirm({
+  showConfirmModal({
+    variant: 'admin',
     title: '确认设为精选？',
     content: `应用：${record.appName || record.id}，优先级将设为 ${GOOD_APP_PRIORITY}`,
     okText: '确定',
@@ -119,7 +125,8 @@ function handleCancelFeatured(record: API.AppVO) {
   if (!record.id) {
     return
   }
-  Modal.confirm({
+  showConfirmModal({
+    variant: 'admin',
     title: '确认取消精选？',
     content: `应用：${record.appName || record.id}，优先级将设为 0`,
     okText: '确定',
@@ -143,7 +150,8 @@ function handleDelete(record: API.AppVO) {
   if (!record.id) {
     return
   }
-  Modal.confirm({
+  showConfirmModal({
+    variant: 'admin',
     title: '确认删除该应用？',
     content: `应用：${record.appName || record.id}`,
     okText: '确定',
@@ -167,8 +175,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="app-manage-page">
-    <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
+  <AdminPageLayout title="应用管理">
+    <div class="admin-panel">
+      <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
       <a-form-item label="id">
         <a-input v-model:value="searchParams.id" placeholder="应用 id" allow-clear style="width: 180px" />
       </a-form-item>
@@ -205,12 +214,15 @@ onMounted(() => {
         </a-space>
       </a-form-item>
     </a-form>
+    </div>
 
+    <div class="admin-panel">
     <a-table
       :columns="columns"
       :data-source="dataList"
       :loading="isLoading"
       row-key="id"
+      table-layout="fixed"
       :pagination="{
         current: searchParams.pageNum,
         pageSize: searchParams.pageSize,
@@ -221,7 +233,10 @@ onMounted(() => {
       }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'cover'">
+        <template v-if="column.key === 'id'">
+          <span class="table-id-cell">{{ (record as API.AppVO).id }}</span>
+        </template>
+        <template v-else-if="column.key === 'cover'">
           <a-avatar
             shape="square"
             :src="(record as API.AppVO).cover || undefined"
@@ -231,7 +246,7 @@ onMounted(() => {
           </a-avatar>
         </template>
         <template v-else-if="column.key === 'codeGenType'">
-          {{ formatCodeGenType((record as API.AppVO).codeGenType) }}
+          <CodeGenTypeTag :code-gen-type="(record as API.AppVO).codeGenType" />
         </template>
         <template v-else-if="column.key === 'user'">
           {{ (record as API.AppVO).user?.userName || '-' }}
@@ -243,32 +258,43 @@ onMounted(() => {
           {{ formatDateTime((record as API.AppVO).deployedTime) }}
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" @click="handleEdit(record as API.AppVO)">编辑</a-button>
-            <a-button
-              v-if="isFeaturedApp(record as API.AppVO)"
-              type="link"
-              @click="handleCancelFeatured(record as API.AppVO)"
-            >
-              取消精选
-            </a-button>
-            <a-button v-else type="link" @click="handleFeatured(record as API.AppVO)">精选</a-button>
-            <a-button type="link" danger @click="handleDelete(record as API.AppVO)">删除</a-button>
-          </a-space>
+          <div class="table-action-cell">
+            <a-space :size="8" wrap>
+              <a-button
+                size="small"
+                class="table-action-btn table-action-btn--edit"
+                @click="handleEdit(record as API.AppVO)"
+              >
+                编辑
+              </a-button>
+              <a-button
+                v-if="isFeaturedApp(record as API.AppVO)"
+                size="small"
+                class="table-action-btn table-action-btn--featured"
+                @click="handleCancelFeatured(record as API.AppVO)"
+              >
+                取消精选
+              </a-button>
+              <a-button
+                v-else
+                size="small"
+                class="table-action-btn table-action-btn--featured"
+                @click="handleFeatured(record as API.AppVO)"
+              >
+                精选
+              </a-button>
+              <a-button
+                size="small"
+                class="table-action-btn table-action-btn--delete"
+                @click="handleDelete(record as API.AppVO)"
+              >
+                删除
+              </a-button>
+            </a-space>
+          </div>
         </template>
       </template>
     </a-table>
-  </div>
+    </div>
+  </AdminPageLayout>
 </template>
-
-<style scoped>
-.app-manage-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.search-form {
-  row-gap: 12px;
-}
-</style>

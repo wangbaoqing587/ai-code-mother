@@ -17,6 +17,7 @@ declare module 'vue' {
     AConfigProvider: typeof import('ant-design-vue/es')['ConfigProvider']
     ADescriptions: typeof import('ant-design-vue/es')['Descriptions']
     ADescriptionsItem: typeof import('ant-design-vue/es')['DescriptionsItem']
+    AdminPageLayout: typeof import('./src/components/AdminPageLayout.vue')['default']
     ADropdown: typeof import('ant-design-vue/es')['Dropdown']
     AForm: typeof import('ant-design-vue/es')['Form']
     AFormItem: typeof import('ant-design-vue/es')['FormItem']
@@ -31,6 +32,7 @@ declare module 'vue' {
     AMenuItem: typeof import('ant-design-vue/es')['MenuItem']
     AModal: typeof import('ant-design-vue/es')['Modal']
     APagination: typeof import('ant-design-vue/es')['Pagination']
+    APopover: typeof import('ant-design-vue/es')['Popover']
     AppCard: typeof import('./src/components/AppCard.vue')['default']
     AppDetailModal: typeof import('./src/components/AppDetailModal.vue')['default']
     AppListSection: typeof import('./src/components/AppListSection.vue')['default']
@@ -42,6 +44,7 @@ declare module 'vue' {
     ATextarea: typeof import('ant-design-vue/es')['Textarea']
     AUpload: typeof import('ant-design-vue/es')['Upload']
     AuthPageLayout: typeof import('./src/components/AuthPageLayout.vue')['default']
+    CodeGenTypeTag: typeof import('./src/components/CodeGenTypeTag.vue')['default']
     DeploySuccessModal: typeof import('./src/components/DeploySuccessModal.vue')['default']
     GlobalFooter: typeof import('./src/components/GlobalFooter.vue')['default']
     GlobalHeader: typeof import('./src/components/GlobalHeader.vue')['default']
@@ -51,5 +54,6 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
+    UserPageLayout: typeof import('./src/components/UserPageLayout.vue')['default']
   }
 }

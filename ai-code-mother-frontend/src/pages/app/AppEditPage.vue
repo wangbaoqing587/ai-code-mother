@@ -10,10 +10,11 @@ import {
   updateAppByAdmin,
 } from '@/api/appController'
 import { ACCESS_ENUM } from '@/access/accessEnum'
-import PageHeader from '@/components/PageHeader.vue'
+import AdminPageLayout from '@/components/AdminPageLayout.vue'
+import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import UserPageLayout from '@/components/UserPageLayout.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
-import { formatCodeGenType } from '@/constants/codeGenType'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { compressImage } from '@/utils/image'
 import { parseRouteParamId } from '@/utils/route'
@@ -52,6 +53,12 @@ const accessUrl = computed(() => {
   }
   return ''
 })
+
+const infoLabelStyle = {
+  width: '90px',
+  maxWidth: '90px',
+  whiteSpace: 'nowrap',
+}
 
 function syncFormFromApp() {
   formState.appName = appInfo.value.appName ?? ''
@@ -133,6 +140,12 @@ async function handleSubmit() {
   }
 }
 
+function openAccessUrl() {
+  if (accessUrl.value) {
+    window.open(accessUrl.value, '_blank', 'noopener,noreferrer')
+  }
+}
+
 onMounted(async () => {
   await loginUserStore.fetchLoginUser()
   if (!loginUserStore.loginUser.id) {
@@ -144,17 +157,118 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="app-edit-page">
-    <PageHeader title="应用信息编辑">
-      <template #actions>
+  <div class="app-edit-root">
+    <AdminPageLayout v-if="isAdmin" title="应用信息编辑">
+    <div class="admin-panel app-edit-panel">
+      <a-spin :spinning="isLoading">
+        <div class="panel-toolbar">
+          <a-space>
+            <a-button @click="router.back()">返回</a-button>
+            <a-button type="primary" :loading="isSubmitting" @click="handleSubmit">保存</a-button>
+          </a-space>
+        </div>
+
+        <a-form layout="vertical" :model="formState" class="edit-form">
+          <a-form-item label="应用名称" required>
+            <a-input v-model:value="formState.appName" placeholder="请输入应用名称" />
+          </a-form-item>
+
+          <a-form-item label="应用封面">
+            <div class="cover-edit">
+              <div class="cover-preview">
+                <img v-if="formState.cover" :src="formState.cover" alt="封面预览" />
+                <span v-else>暂无封面</span>
+              </div>
+              <div class="cover-inputs">
+                <a-input v-model:value="formState.cover" placeholder="请输入封面 URL" allow-clear />
+                <a-upload
+                  accept="image/*"
+                  :show-upload-list="false"
+                  :before-upload="beforeCoverUpload"
+                >
+                  <a-button>本地上传</a-button>
+                </a-upload>
+              </div>
+            </div>
+          </a-form-item>
+
+          <a-form-item label="优先级">
+            <div class="priority-row">
+              <a-input-number
+                v-model:value="formState.priority"
+                :min="0"
+                style="width: 200px"
+                placeholder="请输入优先级"
+              />
+              <span class="field-tip">99 表示精选应用</span>
+            </div>
+          </a-form-item>
+
+          <a-form-item label="初始提示词">
+            <a-textarea :value="appInfo.initPrompt || '-'" :rows="4" disabled class="readonly-field" />
+          </a-form-item>
+
+          <a-form-item label="生成类型">
+            <div class="readonly-value">
+              <CodeGenTypeTag v-if="appInfo.codeGenType" :code-gen-type="appInfo.codeGenType" />
+              <span v-else>-</span>
+            </div>
+          </a-form-item>
+
+          <a-form-item label="部署密钥">
+            <a-input :value="appInfo.deployKey || '-'" disabled class="readonly-field" />
+          </a-form-item>
+        </a-form>
+
+        <div class="info-section">
+          <h3 class="info-title">应用信息</h3>
+          <a-descriptions
+            class="app-info-descriptions app-info-descriptions-two-col"
+            bordered
+            :column="2"
+            size="middle"
+            :label-style="infoLabelStyle"
+          >
+            <a-descriptions-item label="应用 ID">
+              {{ appInfo.id || '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="创建者">
+              <div class="creator-cell">
+                <UserAvatar :size="24" :src="creatorAvatar" />
+                <span>{{ creatorName }}</span>
+              </div>
+            </a-descriptions-item>
+            <a-descriptions-item label="创建时间">
+              {{ formatDateTime(appInfo.createTime) }}
+            </a-descriptions-item>
+            <a-descriptions-item label="更新时间">
+              {{ formatDateTime(appInfo.updateTime) }}
+            </a-descriptions-item>
+            <a-descriptions-item label="部署时间">
+              {{ formatDateTime(appInfo.deployedTime) }}
+            </a-descriptions-item>
+            <a-descriptions-item label="访问链接">
+              <div v-if="accessUrl" class="access-link-row">
+                <span class="access-link-url">{{ accessUrl }}</span>
+                <a-button size="small" class="access-link-btn" @click="openAccessUrl">浏览</a-button>
+              </div>
+              <span v-else>-</span>
+            </a-descriptions-item>
+          </a-descriptions>
+        </div>
+      </a-spin>
+    </div>
+  </AdminPageLayout>
+
+  <UserPageLayout v-else title="应用信息编辑">
+    <a-spin :spinning="isLoading">
+      <div class="panel-toolbar">
         <a-space>
           <a-button @click="router.back()">返回</a-button>
           <a-button type="primary" :loading="isSubmitting" @click="handleSubmit">保存</a-button>
         </a-space>
-      </template>
-    </PageHeader>
+      </div>
 
-    <a-spin :spinning="isLoading">
       <a-form layout="vertical" :model="formState" class="edit-form">
         <a-form-item label="应用名称" required>
           <a-input v-model:value="formState.appName" placeholder="请输入应用名称" />
@@ -162,53 +276,41 @@ onMounted(async () => {
 
         <a-form-item label="应用封面">
           <div class="cover-edit">
-            <div class="cover-preview">
+            <div class="cover-preview cover-preview-mint">
               <img v-if="formState.cover" :src="formState.cover" alt="封面预览" />
               <span v-else>暂无封面</span>
             </div>
             <div class="cover-inputs">
               <a-input v-model:value="formState.cover" placeholder="请输入封面 URL" allow-clear />
-              <a-upload
-                accept="image/*"
-                :show-upload-list="false"
-                :before-upload="beforeCoverUpload"
-              >
+              <a-upload accept="image/*" :show-upload-list="false" :before-upload="beforeCoverUpload">
                 <a-button>本地上传</a-button>
               </a-upload>
             </div>
           </div>
         </a-form-item>
 
-        <a-form-item label="优先级">
-          <div class="priority-row">
-            <a-input-number
-              v-model:value="formState.priority"
-              :min="0"
-              :disabled="!isAdmin"
-              style="width: 200px"
-              placeholder="请输入优先级"
-            />
-            <span class="field-tip">99表示精选应用</span>
-          </div>
-        </a-form-item>
-
         <a-form-item label="初始提示词">
-          <a-textarea :value="appInfo.initPrompt || '-'" :rows="4" disabled />
+          <a-textarea :value="appInfo.initPrompt || '-'" :rows="4" disabled class="readonly-field" />
         </a-form-item>
 
         <a-form-item label="生成类型">
-          <a-input :value="formatCodeGenType(appInfo.codeGenType)" disabled />
-        </a-form-item>
-
-        <a-form-item label="部署密钥">
-          <a-input :value="appInfo.deployKey || '-'" disabled />
+          <div class="readonly-value">
+            <CodeGenTypeTag v-if="appInfo.codeGenType" :code-gen-type="appInfo.codeGenType" />
+            <span v-else>-</span>
+          </div>
         </a-form-item>
       </a-form>
 
       <div class="info-section">
         <h3 class="info-title">应用信息</h3>
-        <a-descriptions bordered :column="2" size="middle">
-          <a-descriptions-item label="应用ID">
+        <a-descriptions
+          class="app-info-descriptions"
+          bordered
+          :column="1"
+          size="middle"
+          :label-style="infoLabelStyle"
+        >
+          <a-descriptions-item label="应用 ID">
             {{ appInfo.id || '-' }}
           </a-descriptions-item>
           <a-descriptions-item label="创建者">
@@ -227,25 +329,43 @@ onMounted(async () => {
             {{ formatDateTime(appInfo.deployedTime) }}
           </a-descriptions-item>
           <a-descriptions-item label="访问链接">
-            <a v-if="accessUrl" :href="accessUrl" target="_blank" rel="noopener noreferrer">
-              查看预览
-            </a>
+            <div v-if="accessUrl" class="access-link-row">
+              <span class="access-link-url">{{ accessUrl }}</span>
+              <a-button size="small" class="access-link-btn" @click="openAccessUrl">浏览</a-button>
+            </div>
             <span v-else>-</span>
           </a-descriptions-item>
         </a-descriptions>
       </div>
     </a-spin>
+  </UserPageLayout>
   </div>
 </template>
 
 <style scoped>
-.app-edit-page {
-  max-width: 720px;
+.app-edit-root :deep(.admin-content),
+.app-edit-root :deep(.user-content) {
+  max-width: 760px;
+}
+
+.app-edit-root :deep(.admin-title) {
+  text-align: center;
+}
+
+.app-edit-panel {
+  width: 100%;
+  max-width: 760px;
   margin: 0 auto;
 }
 
+.panel-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
 .edit-form {
-  max-width: 560px;
+  max-width: 100%;
 }
 
 .cover-edit {
@@ -262,9 +382,15 @@ onMounted(async () => {
   max-width: 320px;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border-radius: 12px;
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  border: 1.5px solid rgba(129, 212, 250, 0.4);
+  background: #f5faff;
+  color: #94a3b8;
+}
+
+.cover-preview-mint {
+  border-color: rgba(136, 216, 176, 0.4);
+  background: #f7faf8;
 }
 
 .cover-preview img {
@@ -278,33 +404,125 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cover-inputs :deep(.ant-input-affix-wrapper) {
+  flex: 1;
+  min-width: 200px;
 }
 
 .priority-row {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .field-tip {
   font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  color: #94a3b8;
   white-space: nowrap;
 }
 
+.readonly-value {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.readonly-field {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+}
+
 .info-section {
-  margin-top: 32px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
 .info-title {
   margin: 0 0 16px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
+  color: #1a2e35;
 }
 
 .creator-cell {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+.access-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.access-link-url {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+  color: #334155;
+}
+
+.access-link-btn {
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.app-info-descriptions :deep(.ant-descriptions-view table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.app-info-descriptions :deep(.ant-descriptions-item-label) {
+  width: 90px !important;
+  max-width: 90px !important;
+  padding: 12px 8px !important;
+  box-sizing: border-box;
+}
+
+.app-info-descriptions :deep(.ant-descriptions-row > th) {
+  width: 90px !important;
+  max-width: 90px !important;
+}
+
+.app-info-descriptions-two-col :deep(.ant-descriptions-row > .ant-descriptions-item-content:nth-child(2)) {
+  width: 220px !important;
+  max-width: 220px !important;
+  word-break: break-all;
+}
+
+.app-edit-panel :deep(.ant-descriptions-bordered .ant-descriptions-item-label) {
+  background: #eef6fc;
+  color: #475569;
+  font-weight: 500;
+  border-color: rgba(129, 212, 250, 0.22) !important;
+}
+
+.app-edit-panel :deep(.ant-descriptions-bordered .ant-descriptions-item-content) {
+  color: #334155;
+  border-color: rgba(129, 212, 250, 0.22) !important;
+}
+
+.app-edit-panel :deep(.ant-descriptions-bordered .ant-descriptions-view) {
+  border-color: rgba(129, 212, 250, 0.22) !important;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.app-edit-panel :deep(.ant-input-number) {
+  border-radius: 10px !important;
+  border-color: rgba(129, 212, 250, 0.45) !important;
+}
+
+.app-edit-panel :deep(.ant-input-number-input) {
+  caret-color: #6bb5f0;
 }
 </style>

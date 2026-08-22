@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import type { TableColumnsType } from 'ant-design-vue'
+import AdminPageLayout from '@/components/AdminPageLayout.vue'
 import { listAllChatHistoryByPageForAdmin } from '@/api/chatHistoryController'
 import { formatDateTime } from '@/utils/time'
 
@@ -25,8 +26,8 @@ const searchParams = reactive<API.ChatHistoryQueryRequest>({
 })
 
 const columns: TableColumnsType = [
-  { title: 'id', dataIndex: 'id', width: 80 },
-  { title: '消息内容', dataIndex: 'message', ellipsis: true },
+  { title: 'id', dataIndex: 'id', key: 'id', width: 112 },
+  { title: '消息内容', dataIndex: 'message', key: 'message' },
   { title: '消息类型', dataIndex: 'messageType', key: 'messageType', width: 100 },
   { title: '应用 id', dataIndex: 'appId', width: 120 },
   { title: '用户 id', dataIndex: 'userId', width: 120 },
@@ -86,8 +87,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="chat-manage-page">
-    <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
+  <AdminPageLayout title="对话管理">
+    <div class="admin-panel">
+      <a-form layout="inline" class="search-form" :model="searchParams" @finish="handleSearch">
       <a-form-item label="id">
         <a-input-number
           v-model:value="searchParams.id"
@@ -134,12 +136,15 @@ onMounted(() => {
         </a-space>
       </a-form-item>
     </a-form>
+    </div>
 
+    <div class="admin-panel">
     <a-table
       :columns="columns"
       :data-source="dataList"
       :loading="isLoading"
       row-key="id"
+      table-layout="fixed"
       :pagination="{
         current: searchParams.pageNum,
         pageSize: searchParams.pageSize,
@@ -150,7 +155,26 @@ onMounted(() => {
       }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'messageType'">
+        <template v-if="column.key === 'id'">
+          <span class="table-id-cell">{{ (record as API.ChatHistory).id }}</span>
+        </template>
+        <template v-else-if="column.key === 'message'">
+          <a-popover
+            v-if="(record as API.ChatHistory).message"
+            trigger="click"
+            placement="topLeft"
+            overlay-class-name="message-detail-popover"
+          >
+            <template #content>
+              <div class="message-detail-content">{{ (record as API.ChatHistory).message }}</div>
+            </template>
+            <span class="table-message-cell table-message-cell--clickable">
+              {{ (record as API.ChatHistory).message }}
+            </span>
+          </a-popover>
+          <span v-else class="table-message-cell">-</span>
+        </template>
+        <template v-else-if="column.key === 'messageType'">
           {{ formatMessageType((record as API.ChatHistory).messageType) }}
         </template>
         <template v-else-if="column.key === 'createTime'">
@@ -161,17 +185,18 @@ onMounted(() => {
         </template>
       </template>
     </a-table>
-  </div>
+    </div>
+  </AdminPageLayout>
 </template>
 
-<style scoped>
-.chat-manage-page {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.search-form {
-  row-gap: 12px;
+<style>
+.message-detail-popover .message-detail-content {
+  max-width: 480px;
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  color: #334155;
 }
 </style>

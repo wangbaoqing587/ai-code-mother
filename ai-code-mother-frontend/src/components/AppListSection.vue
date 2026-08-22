@@ -53,7 +53,7 @@ const emit = defineEmits<{
   font-size: 24px;
   font-weight: 700;
   text-align: center;
-  color: #f8fafc;
+  color: #1a2e35;
 }
 
 .app-grid {
