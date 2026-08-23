@@ -10,12 +10,14 @@ import AppDetailModal from '@/components/AppDetailModal.vue'
 import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import DeploySuccessModal from '@/components/DeploySuccessModal.vue'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
+import StreamingMessageRenderer from '@/components/StreamingMessageRenderer.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getFilenameFromContentDisposition, triggerBlobDownload } from '@/utils/download'
 import { generateCode } from '@/utils/sse'
+import { throttle } from '@/utils/throttle'
 import { showConfirmModal } from '@/utils/modal'
 import { parseRouteParamId } from '@/utils/route'
 import {
@@ -61,6 +63,15 @@ const isEditMode = ref(false)
 const selectedElementInfo = ref<ElementInfo | null>(null)
 
 let closeStream: (() => void) | null = null
+let activeFlushContent: ReturnType<typeof throttle> | null = null
+let activeScheduleScroll: ReturnType<typeof throttle> | null = null
+
+function cancelStreamThrottles() {
+  activeFlushContent?.cancel()
+  activeScheduleScroll?.cancel()
+  activeFlushContent = null
+  activeScheduleScroll = null
+}
 
 const visualEditor = createVisualEditor({
   onElementSelected(info) {
@@ -205,6 +216,7 @@ async function handleLoadMoreHistory() {
 }
 
 function stopStream() {
+  cancelStreamThrottles()
   if (closeStream) {
     closeStream()
     closeStream = null
@@ -285,28 +297,43 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
     return
   }
   stopStream()
-  let fullContent = ''
+  let pendingContent = ''
+
+  const scheduleScrollToBottom = throttle(async () => {
+    await nextTick()
+    if (messagesRef.value) {
+      messagesRef.value.scrollTop = messagesRef.value.scrollHeight
+    }
+  }, 200)
+
+  const flushContentUpdate = throttle(() => {
+    const aiMessage = messages.value[aiMessageIndex]
+    if (aiMessage) {
+      aiMessage.content = pendingContent
+    }
+    scheduleScrollToBottom()
+  }, 200)
+
+  activeFlushContent = flushContentUpdate
+  activeScheduleScroll = scheduleScrollToBottom
 
   closeStream = generateCode(
     { appId: appId.value, message: userMessage },
     {
       onMessage: (chunk) => {
-        fullContent += chunk
-        const aiMessage = messages.value[aiMessageIndex]
-        if (!aiMessage) {
-          return
-        }
-        aiMessage.content = fullContent
-        aiMessage.isStreaming = false
-        scrollToBottom()
+        pendingContent += chunk
+        flushContentUpdate()
       },
       onDone: async () => {
+        flushContentUpdate.flush()
         const aiMessage = messages.value[aiMessageIndex]
         if (aiMessage) {
           aiMessage.isStreaming = false
         }
         isGenerating.value = false
         closeStream = null
+        scheduleScrollToBottom.flush()
+        cancelStreamThrottles()
         setTimeout(async () => {
           await fetchAppInfo()
           if (appInfo.value.codeGenType) {
@@ -317,6 +344,7 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
         }, 1000)
       },
       onBusinessError: (errorMessage) => {
+        flushContentUpdate.flush()
         const aiMessage = messages.value[aiMessageIndex]
         if (aiMessage) {
           aiMessage.content = `❌ ${errorMessage}`
@@ -324,9 +352,11 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
         }
         isGenerating.value = false
         closeStream = null
+        cancelStreamThrottles()
         message.error(errorMessage)
       },
       onError: (error) => {
+        flushContentUpdate.flush()
         const aiMessage = messages.value[aiMessageIndex]
         if (aiMessage) {
           aiMessage.isStreaming = false
@@ -334,6 +364,7 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
         }
         isGenerating.value = false
         closeStream = null
+        cancelStreamThrottles()
         message.error(error.message || '生成失败')
       },
     },
@@ -536,8 +567,13 @@ onBeforeUnmount(() => {
               />
               <div v-else class="message-avatar-placeholder" aria-hidden="true" />
               <div class="message-bubble" :class="item.role">
+                <StreamingMessageRenderer
+                  v-if="item.role === 'ai' && item.isStreaming"
+                  :content="item.content"
+                  :is-streaming="true"
+                />
                 <MarkdownRenderer
-                  v-if="item.role === 'ai' && item.content"
+                  v-else-if="item.role === 'ai' && item.content"
                   :content="item.content"
                 />
                 <pre v-else class="message-content">{{

@@ -16,22 +16,26 @@ const md = new MarkdownIt({
   breaks: true,
 })
 
+export function highlightCode(code: string, lang: string): string {
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      return (
+        '<pre class="hljs"><code class="language-' +
+        lang +
+        '">' +
+        hljs.highlight(code, { language: lang, ignoreIllegals: true }).value +
+        '</code></pre>'
+      )
+    } catch {
+      // ignore
+    }
+  }
+  return '<pre class="hljs"><code>' + md.utils.escapeHtml(code) + '</code></pre>'
+}
+
 md.set({
   highlight(str: string, lang: string): string {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return (
-          '<pre class="hljs"><code class="language-' +
-          lang +
-          '">' +
-          hljs.highlight(str, { language: lang, ignoreIllegals: true }).value +
-          '</code></pre>'
-        )
-      } catch {
-        // ignore
-      }
-    }
-    return '<pre class="hljs"><code>' + md.utils.escapeHtml(str) + '</code></pre>'
+    return highlightCode(str, lang)
   },
 })
 

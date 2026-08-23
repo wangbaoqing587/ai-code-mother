@@ -45,6 +45,7 @@ declare module 'vue' {
     AUpload: typeof import('ant-design-vue/es')['Upload']
     AuthPageLayout: typeof import('./src/components/AuthPageLayout.vue')['default']
     CodeGenTypeTag: typeof import('./src/components/CodeGenTypeTag.vue')['default']
+    CollapsibleCodeBlock: typeof import('./src/components/CollapsibleCodeBlock.vue')['default']
     DeploySuccessModal: typeof import('./src/components/DeploySuccessModal.vue')['default']
     GlobalFooter: typeof import('./src/components/GlobalFooter.vue')['default']
     GlobalHeader: typeof import('./src/components/GlobalHeader.vue')['default']
@@ -53,6 +54,7 @@ declare module 'vue' {
     PromptInputBox: typeof import('./src/components/PromptInputBox.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    StreamingMessageRenderer: typeof import('./src/components/StreamingMessageRenderer.vue')['default']
     UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
     UserPageLayout: typeof import('./src/components/UserPageLayout.vue')['default']
   }
