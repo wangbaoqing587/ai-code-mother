@@ -1,0 +1,35 @@
+name: starvive
+description: 星衍 AI 零代码应用生成平台 Flutter 客户端
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  go_router: ^14.8.1
+  dio: ^5.8.0+1
+  cookie_jar: ^4.0.8
+  dio_cookie_manager: ^3.2.0
+  path_provider: ^2.1.5
+  flutter_markdown: ^0.7.7+1
+  webview_flutter: ^4.10.0
+  image_picker: ^1.1.2
+  image: ^4.5.4
+  url_launcher: ^6.3.1
+  intl: ^0.20.2
+  shared_preferences: ^2.5.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
