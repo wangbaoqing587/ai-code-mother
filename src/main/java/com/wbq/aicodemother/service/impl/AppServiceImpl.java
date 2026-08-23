@@ -9,6 +9,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingService;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
+import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.constant.AppConstant;
 import com.wbq.aicodemother.core.AiCodeGeneratorFacade;
 import com.wbq.aicodemother.core.handler.StreamHandlerExecutor;
@@ -65,6 +66,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+
+    @Resource
+    private CacheEvictor cacheEvictor;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -136,7 +140,20 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             log.error("删除应用关联的对话历史失败：{}", e.getMessage());
         }
         // 删除应用
-        return super.removeById(id);
+        boolean result = super.removeById(id);
+        if (result) {
+            cacheEvictor.evictGoodAppPage();
+        }
+        return result;
+    }
+
+    @Override
+    public boolean updateById(App entity) {
+        boolean result = super.updateById(entity);
+        if (result) {
+            cacheEvictor.evictGoodAppPage();
+        }
+        return result;
     }
 
     @Override

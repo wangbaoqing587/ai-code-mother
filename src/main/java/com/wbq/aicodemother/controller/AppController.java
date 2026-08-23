@@ -244,7 +244,7 @@ public class AppController {
      */
     @PostMapping("/good/list/page/vo")
     @Cacheable(
-            value = "good_app_page",
+            value = AppConstant.GOOD_APP_PAGE_CACHE,
             key = "T(com.wbq.aicodemother.utils.CacheKeyUtils).generateKey(#appQueryRequest)",
             condition = "#appQueryRequest.pageNum <= 10"
     )

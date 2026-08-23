@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.model.dto.user.UserQueryRequest;
@@ -14,10 +15,12 @@ import com.wbq.aicodemother.model.enums.UserRoleEnum;
 import com.wbq.aicodemother.model.vo.LoginUserVO;
 import com.wbq.aicodemother.model.vo.UserVO;
 import com.wbq.aicodemother.service.UserService;
+import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +34,27 @@ import static com.wbq.aicodemother.constant.UserConstant.USER_LOGIN_STATE;
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService{
+
+    @Resource
+    private CacheEvictor cacheEvictor;
+
+    @Override
+    public boolean updateById(User entity) {
+        boolean result = super.updateById(entity);
+        if (result) {
+            cacheEvictor.evictGoodAppPage();
+        }
+        return result;
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+        boolean result = super.removeById(id);
+        if (result) {
+            cacheEvictor.evictGoodAppPage();
+        }
+        return result;
+    }
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {

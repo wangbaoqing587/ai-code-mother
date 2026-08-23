@@ -3,6 +3,11 @@ package com.wbq.aicodemother.constant;
 public interface AppConstant {
 
     /**
+     * 精选应用列表缓存名
+     */
+    String GOOD_APP_PAGE_CACHE = "good_app_page";
+
+    /**
      * 精选应用的优先级
      */
     Integer GOOD_APP_PRIORITY = 99;

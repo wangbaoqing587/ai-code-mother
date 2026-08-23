@@ -1,7 +1,6 @@
 package com.wbq.aicodemother.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.wbq.aicodemother.constant.AppConstant;
 import jakarta.annotation.Resource;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Bean;
@@ -22,11 +21,6 @@ public class RedisCacheManagerConfig {
 
     @Bean
     public CacheManager cacheManager() {
-        // 配置 ObjectMapper 支持 Java8 时间类型
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        
-        // 默认配置
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(30)) // 默认 30 分钟过期
                 .disableCachingNullValues() // 禁用 null 值缓存
@@ -39,8 +33,7 @@ public class RedisCacheManagerConfig {
         
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)
-                // 针对 good_app_page 配置5分钟过期
-                .withCacheConfiguration("good_app_page",
+                .withCacheConfiguration(AppConstant.GOOD_APP_PAGE_CACHE,
                         defaultConfig.entryTtl(Duration.ofMinutes(5)))
                 .build();
     }
