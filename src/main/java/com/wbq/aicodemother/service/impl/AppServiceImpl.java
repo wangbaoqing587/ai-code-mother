@@ -7,8 +7,12 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.wbq.aicodemother.ai.AiAppNameService;
+import com.wbq.aicodemother.ai.AiAppNameServiceFactory;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingService;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
+import com.wbq.aicodemother.ai.model.AppNameResult;
+import com.wbq.aicodemother.utils.AppNameUtils;
 import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.constant.AppConstant;
 import com.wbq.aicodemother.core.AiCodeGeneratorFacade;
@@ -41,6 +45,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -69,6 +74,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+
+    @Resource
+    private AiAppNameServiceFactory aiAppNameServiceFactory;
 
     @Resource
     private CacheEvictor cacheEvictor;
@@ -126,21 +134,34 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 参数校验
         String initPrompt = appAddRequest.getInitPrompt();
         ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
-        // 构造入库对象
+        // app命名任务 与 选择代码生成类型 任务并行
+        CompletableFuture<String> appNameFuture = CompletableFuture.supplyAsync(() -> {
+            try {
+                AiAppNameService aiAppNameService = aiAppNameServiceFactory.createAiAppNameService();
+                AppNameResult appNameResult = aiAppNameService.generateAppName(initPrompt);
+                String aiAppName = appNameResult != null ? appNameResult.getAppName() : null;
+                return AppNameUtils.resolveAppName(initPrompt, aiAppName);
+            } catch (Exception e) {
+                log.warn("AI 生成应用名失败: {}", e.getMessage());
+                return AppNameUtils.fallbackFromPrompt(initPrompt);
+            }
+        });
+        CompletableFuture<CodeGenTypeEnum> codeGenTypeFuture = CompletableFuture.supplyAsync(() -> {
+            AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+            return aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        });
+        String appName = appNameFuture.join();
+        CodeGenTypeEnum selectedCodeGenType = codeGenTypeFuture.join();
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 使用 AI 智能选择代码生成类型
-        AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
-        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setAppName(appName);
         app.setCodeGenType(selectedCodeGenType.getValue());
         app.setGenStatus(AppGenStatusEnum.IDLE.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        log.info("应用创建成功，ID: {}, 名称: {}, 类型: {}", app.getId(), appName, selectedCodeGenType.getValue());
         return app.getId();
     }
 
