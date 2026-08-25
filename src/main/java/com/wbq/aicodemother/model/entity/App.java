@@ -60,6 +60,12 @@ public class App implements Serializable {
     private String codeGenType;
 
     /**
+     * 代码生成状态（枚举）
+     */
+    @Column("genStatus")
+    private String genStatus;
+
+    /**
      * 部署标识
      */
     @Column("deployKey")

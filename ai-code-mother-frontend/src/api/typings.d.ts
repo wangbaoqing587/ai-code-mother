@@ -41,6 +41,7 @@ declare namespace API {
     cover?: string
     initPrompt?: string
     codeGenType?: string
+    genStatus?: string
     deployKey?: string
     deployedTime?: string
     priority?: number

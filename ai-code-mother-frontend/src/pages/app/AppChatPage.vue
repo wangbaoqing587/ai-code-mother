@@ -35,6 +35,10 @@ interface ChatMessage {
 }
 
 const HISTORY_PAGE_SIZE = 10
+const APP_GEN_STATUS_GENERATING = 'generating'
+const APP_GEN_STATUS_FAILED = 'failed'
+const GENERATION_POLL_INTERVAL_MS = 2000
+const GENERATION_POLL_TIMEOUT_MS = 5 * 60 * 1000
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +69,8 @@ const selectedElementInfo = ref<ElementInfo | null>(null)
 let closeStream: (() => void) | null = null
 let activeFlushContent: ReturnType<typeof throttle> | null = null
 let activeScheduleScroll: ReturnType<typeof throttle> | null = null
+let generationPollTimer: ReturnType<typeof setInterval> | null = null
+let generationPollStartedAt = 0
 
 function cancelStreamThrottles() {
   activeFlushContent?.cancel()
@@ -143,24 +149,30 @@ async function scrollToBottom() {
   }
 }
 
-async function fetchAppInfo() {
+async function fetchAppInfo(silent = false) {
   if (!appId.value) {
     return
   }
-  isLoadingApp.value = true
+  if (!silent) {
+    isLoadingApp.value = true
+  }
   try {
     const res = await getAppVoById({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
       return
     }
-    message.error('获取应用信息失败：' + (res.data.message ?? '未知错误'))
+    if (!silent) {
+      message.error('获取应用信息失败：' + (res.data.message ?? '未知错误'))
+    }
   } finally {
-    isLoadingApp.value = false
+    if (!silent) {
+      isLoadingApp.value = false
+    }
   }
 }
 
-async function fetchChatHistory(isLoadMore = false) {
+async function fetchChatHistory(isLoadMore = false, silent = false) {
   if (!appId.value) {
     return
   }
@@ -169,7 +181,7 @@ async function fetchChatHistory(isLoadMore = false) {
       return
     }
     isLoadingMoreHistory.value = true
-  } else {
+  } else if (!silent) {
     isLoadingHistory.value = true
   }
 
@@ -206,13 +218,120 @@ async function fetchChatHistory(isLoadMore = false) {
     }
     message.error('获取对话历史失败：' + (res.data.message ?? '未知错误'))
   } finally {
-    isLoadingHistory.value = false
-    isLoadingMoreHistory.value = false
+    if (isLoadMore) {
+      isLoadingMoreHistory.value = false
+    } else if (!silent) {
+      isLoadingHistory.value = false
+    }
   }
 }
 
 async function handleLoadMoreHistory() {
   await fetchChatHistory(true)
+}
+
+function stopGenerationPolling() {
+  if (generationPollTimer) {
+    clearInterval(generationPollTimer)
+    generationPollTimer = null
+  }
+  generationPollStartedAt = 0
+}
+
+function ensureGeneratingAiPlaceholder() {
+  const lastMessage = messages.value[messages.value.length - 1]
+  if (lastMessage?.role === 'user') {
+    messages.value.push({
+      id: createMessageId(),
+      role: 'ai',
+      content: '',
+      isStreaming: true,
+    })
+    return
+  }
+  if (lastMessage?.role === 'ai' && !lastMessage.content) {
+    lastMessage.isStreaming = true
+  }
+}
+
+async function finishGeneration(aiMessageIndex?: number) {
+  if (aiMessageIndex !== undefined) {
+    const aiMessage = messages.value[aiMessageIndex]
+    if (aiMessage) {
+      aiMessage.isStreaming = false
+    }
+  } else {
+    const lastMessage = messages.value[messages.value.length - 1]
+    if (lastMessage?.role === 'ai') {
+      lastMessage.isStreaming = false
+    }
+  }
+  isGenerating.value = false
+  setTimeout(async () => {
+    await fetchAppInfo(true)
+    if (appInfo.value.codeGenType) {
+      showPreview.value = true
+      previewKey.value += 1
+    }
+    await scrollToBottom()
+  }, 1000)
+}
+
+async function pollGenerationStatus() {
+  if (generationPollStartedAt && Date.now() - generationPollStartedAt > GENERATION_POLL_TIMEOUT_MS) {
+    stopGenerationPolling()
+    isGenerating.value = false
+    const lastMessage = messages.value[messages.value.length - 1]
+    if (lastMessage?.role === 'ai') {
+      lastMessage.isStreaming = false
+    }
+    await fetchAppInfo(true)
+    message.error('生成超时，请重试')
+    return
+  }
+
+  await fetchAppInfo(true)
+  if (appInfo.value.genStatus === APP_GEN_STATUS_GENERATING) {
+    return
+  }
+
+  stopGenerationPolling()
+  await fetchChatHistory(false, true)
+
+  if (appInfo.value.genStatus === APP_GEN_STATUS_FAILED) {
+    const lastMessage = messages.value[messages.value.length - 1]
+    if (lastMessage?.role === 'user') {
+      messages.value.push({
+        id: createMessageId(),
+        role: 'ai',
+        content: '❌ 生成失败，请重试',
+      })
+    } else if (lastMessage?.role === 'ai') {
+      lastMessage.isStreaming = false
+      lastMessage.content = lastMessage.content || '❌ 生成失败，请重试'
+    }
+    isGenerating.value = false
+    message.error('生成失败，请重试')
+    return
+  }
+
+  await finishGeneration()
+}
+
+function startGenerationPolling() {
+  stopGenerationPolling()
+  generationPollStartedAt = Date.now()
+  generationPollTimer = setInterval(() => {
+    void pollGenerationStatus()
+  }, GENERATION_POLL_INTERVAL_MS)
+}
+
+async function restoreGeneratingState() {
+  ensureGeneratingAiPlaceholder()
+  isGenerating.value = true
+  showPreview.value = false
+  await scrollToBottom()
+  startGenerationPolling()
 }
 
 function stopStream() {
@@ -326,22 +445,10 @@ async function generateCodeStream(userMessage: string, aiMessageIndex: number) {
       },
       onDone: async () => {
         flushContentUpdate.flush()
-        const aiMessage = messages.value[aiMessageIndex]
-        if (aiMessage) {
-          aiMessage.isStreaming = false
-        }
-        isGenerating.value = false
         closeStream = null
         scheduleScrollToBottom.flush()
         cancelStreamThrottles()
-        setTimeout(async () => {
-          await fetchAppInfo()
-          if (appInfo.value.codeGenType) {
-            showPreview.value = true
-            previewKey.value += 1
-          }
-          await scrollToBottom()
-        }, 1000)
+        await finishGeneration(aiMessageIndex)
       },
       onBusinessError: (errorMessage) => {
         flushContentUpdate.flush()
@@ -466,6 +573,7 @@ function handleDeleteApp() {
 }
 
 async function initPage() {
+  stopGenerationPolling()
   stopStream()
   resetVisualEditState()
   messages.value = []
@@ -473,8 +581,15 @@ async function initPage() {
   hasMoreHistory.value = false
   historyTotal.value = 0
   historyCursor.value = undefined
+  isGenerating.value = false
   await fetchAppInfo()
   await fetchChatHistory(false)
+
+  if (appInfo.value.genStatus === APP_GEN_STATUS_GENERATING) {
+    await restoreGeneratingState()
+    return
+  }
+
   updatePreviewByHistory()
 
   if (isOwner.value && !messages.value.length && appInfo.value.initPrompt) {
@@ -503,6 +618,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('message', handleWindowMessage)
   resetVisualEditState()
+  stopGenerationPolling()
   stopStream()
 })
 </script>

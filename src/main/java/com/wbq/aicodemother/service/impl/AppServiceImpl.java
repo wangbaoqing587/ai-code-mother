@@ -21,6 +21,7 @@ import com.wbq.aicodemother.model.dto.app.AppAddRequest;
 import com.wbq.aicodemother.model.dto.app.AppQueryRequest;
 import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
+import com.wbq.aicodemother.model.enums.AppGenStatusEnum;
 import com.wbq.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 import com.wbq.aicodemother.model.vo.AppVO;
@@ -32,10 +33,12 @@ import com.wbq.aicodemother.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.io.Serializable;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -82,6 +85,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
+        if (AppGenStatusEnum.GENERATING.getValue().equals(app.getGenStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "应用正在生成中，请稍后再试");
+        }
         // 4.获取应用的代码生成类型
         String codeGenType = app.getCodeGenType();
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
@@ -90,10 +96,29 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 5.在调用AI前，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        updateGenStatus(appId, AppGenStatusEnum.GENERATING);
         // 6.调用AI生成代码
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 7.收集AI响应的内容，并且在完成后保存记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        // 增加超时限制和应用状态设置
+        Flux<String> executedFlux = streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .timeout(Duration.ofMinutes(3))
+                .doOnComplete(() -> updateGenStatus(appId, AppGenStatusEnum.IDLE))
+                .doOnError(error -> updateGenStatus(appId, AppGenStatusEnum.FAILED));
+        ConnectableFlux<String> connectableFlux = executedFlux.publish();
+        connectableFlux.connect();
+        return connectableFlux;
+    }
+
+    private void updateGenStatus(Long appId, AppGenStatusEnum genStatus) {
+        log.warn("更新应用生成状态，appId: {}, genStatus: {}", appId, genStatus.getValue());
+        App updateApp = new App();
+        updateApp.setId(appId);
+        updateApp.setGenStatus(genStatus.getValue());
+        boolean updated = this.updateById(updateApp);
+        if (!updated) {
+            log.warn("更新应用生成状态失败，appId: {}, genStatus: {}", appId, genStatus.getValue());
+        }
     }
 
     @Override
@@ -111,6 +136,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
         CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
         app.setCodeGenType(selectedCodeGenType.getValue());
+        app.setGenStatus(AppGenStatusEnum.IDLE.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
