@@ -13,7 +13,7 @@ import {
 import { GOOD_APP_PRIORITY } from '@/constants/app'
 import { CODE_GEN_TYPE_OPTIONS } from '@/constants/codeGenType'
 import { showConfirmModal } from '@/utils/modal'
-import { formatDateTime } from '@/utils/time'
+import { formatDateTimeMultiline } from '@/utils/time'
 
 const router = useRouter()
 const isLoading = ref(false)
@@ -35,16 +35,17 @@ const searchParams = reactive<API.AppQueryRequest>({
 
 const columns: TableColumnsType = [
   { title: 'id', dataIndex: 'id', key: 'id', width: 112 },
-  { title: '应用名称', dataIndex: 'appName', ellipsis: true },
+  { title: '应用名称', dataIndex: 'appName', key: 'appName', width: 120 },
   { title: '封面', dataIndex: 'cover', key: 'cover', width: 80 },
-  { title: '初始化提示词', dataIndex: 'initPrompt', ellipsis: true },
-  { title: '生成类型', dataIndex: 'codeGenType', key: 'codeGenType', width: 160 },
-  { title: '优先级', dataIndex: 'priority', width: 90 },
-  { title: '创建者', dataIndex: 'user', key: 'user', width: 120 },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 180 },
-  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 180 },
-  { title: '操作', key: 'action', width: 320, align: 'left' },
+  { title: '生成类型', dataIndex: 'codeGenType', key: 'codeGenType', width: 124 },
+  { title: '优先级', dataIndex: 'priority', key: 'priority', width: 64 },
+  { title: '创建者', dataIndex: 'user', key: 'user', width: 100 },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: 96 },
+  { title: '部署时间', dataIndex: 'deployedTime', key: 'deployedTime', width: 96 },
+  { title: '操作', key: 'action', width: 240, fixed: 'right' },
 ]
+
+const tableScrollX = 1032
 
 async function fetchData() {
   isLoading.value = true
@@ -223,6 +224,7 @@ onMounted(() => {
       :loading="isLoading"
       row-key="id"
       table-layout="fixed"
+      :scroll="{ x: tableScrollX }"
       :pagination="{
         current: searchParams.pageNum,
         pageSize: searchParams.pageSize,
@@ -235,6 +237,9 @@ onMounted(() => {
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'id'">
           <span class="table-id-cell">{{ (record as API.AppVO).id }}</span>
+        </template>
+        <template v-else-if="column.key === 'appName'">
+          <div class="table-message-cell">{{ (record as API.AppVO).appName || '-' }}</div>
         </template>
         <template v-else-if="column.key === 'cover'">
           <a-avatar
@@ -251,11 +256,16 @@ onMounted(() => {
         <template v-else-if="column.key === 'user'">
           {{ (record as API.AppVO).user?.userName || '-' }}
         </template>
-        <template v-else-if="column.key === 'createTime'">
-          {{ formatDateTime((record as API.AppVO).createTime) }}
-        </template>
-        <template v-else-if="column.key === 'deployedTime'">
-          {{ formatDateTime((record as API.AppVO).deployedTime) }}
+        <template v-else-if="column.key === 'createTime' || column.key === 'deployedTime'">
+          <div class="table-datetime-cell">
+            {{
+              formatDateTimeMultiline(
+                column.key === 'createTime'
+                  ? (record as API.AppVO).createTime
+                  : (record as API.AppVO).deployedTime,
+              )
+            }}
+          </div>
         </template>
         <template v-else-if="column.key === 'action'">
           <div class="table-action-cell">
@@ -298,3 +308,11 @@ onMounted(() => {
     </div>
   </AdminPageLayout>
 </template>
+
+<style scoped>
+.table-datetime-cell {
+  white-space: pre-line;
+  line-height: 1.35;
+  font-size: 12px;
+}
+</style>

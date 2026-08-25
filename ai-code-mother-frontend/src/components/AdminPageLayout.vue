@@ -98,6 +98,7 @@ defineProps<Props>()
   box-shadow:
     0 8px 28px rgba(129, 212, 250, 0.12),
     0 2px 8px rgba(26, 46, 53, 0.04);
+  overflow: hidden;
 }
 
 .admin-content :deep(.search-form) {
@@ -171,8 +172,12 @@ defineProps<Props>()
   background: transparent;
 }
 
+.admin-content :deep(.ant-table-wrapper) {
+  max-width: 100%;
+}
+
 .admin-content :deep(.ant-table-content > table) {
-  width: 100% !important;
+  min-width: 100%;
 }
 
 .admin-content :deep(.ant-table-thead > tr > th) {
