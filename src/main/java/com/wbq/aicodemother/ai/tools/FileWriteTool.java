@@ -73,11 +73,6 @@ public class FileWriteTool extends BaseTool {
         String relativeFilePath = arguments.getStr("relativeFilePath");
         String suffix = FileUtil.getSuffix(relativeFilePath);
         String content = arguments.getStr("content");
-        return String.format("""
-                [工具调用] %s %s
-                ```%s
-                %s
-                ```
-                """, getDisplayName(), relativeFilePath, suffix, content);
+        return String.format("[工具调用] %s %s\n```%s\n%s\n```", getDisplayName(), relativeFilePath, suffix, content);
     }
 }

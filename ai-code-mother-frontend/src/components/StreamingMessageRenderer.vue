@@ -55,7 +55,7 @@ function segmentKey(segment: MessageSegment, index: number) {
 }
 
 .message-text {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: inherit;
@@ -71,7 +71,7 @@ function segmentKey(segment: MessageSegment, index: number) {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   padding: 10px 12px;
   border-radius: 8px;
   border: 1px dashed rgba(136, 216, 176, 0.55);

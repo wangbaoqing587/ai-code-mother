@@ -39,7 +39,7 @@ const htmlContent = computed(() => renderMarkdown(props.content))
 .markdown-body :deep(blockquote),
 .markdown-body :deep(pre),
 .markdown-body :deep(table) {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
 }
 
 .markdown-body :deep(h1),

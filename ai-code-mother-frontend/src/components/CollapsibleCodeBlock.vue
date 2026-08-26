@@ -44,7 +44,7 @@ function toggleCollapsed() {
 
 <style scoped>
 .collapsible-code-block {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   border: 1px solid #eaeef2;
   border-radius: 8px;
   overflow: hidden;
