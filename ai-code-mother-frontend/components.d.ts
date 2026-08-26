@@ -55,6 +55,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StreamingMessageRenderer: typeof import('./src/components/StreamingMessageRenderer.vue')['default']
+    TypewriterText: typeof import('./src/components/TypewriterText.vue')['default']
     UserAvatar: typeof import('./src/components/UserAvatar.vue')['default']
     UserPageLayout: typeof import('./src/components/UserPageLayout.vue')['default']
   }

@@ -6,12 +6,18 @@ import { addApp, listAppVoByPageByAdmin, listGoodAppVoByPage, listMyAppVoByPage 
 import { iconCoverLogo } from '@/assets'
 import AppListSection from '@/components/AppListSection.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
+import TypewriterText from '@/components/TypewriterText.vue'
 import { GOOD_APP_PAGE_SIZE, MY_APP_PAGE_SIZE, QUICK_PROMPTS } from '@/constants/app'
 import { ACCESS_ENUM } from '@/access/accessEnum'
 import { useLoginUserStore } from '@/stores/loginUser'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+
+const HERO_SLOGANS = [
+  '以灵感为星，衍万千应用',
+  '一句话描述，快速生成网站',
+]
 
 const prompt = ref('')
 const isCreating = ref(false)
@@ -145,7 +151,9 @@ onMounted(() => {
     <section class="hero-section">
       <img class="hero-logo" :src="iconCoverLogo" alt="logo" />
       <h1 class="hero-title">星衍-AI 零代码应用生成平台</h1>
-      <p class="hero-subtitle">以灵感为星，衍万千应用</p>
+      <p class="hero-subtitle">
+        <TypewriterText :texts="HERO_SLOGANS" />
+      </p>
 
       <PromptInputBox
         v-model="prompt"
@@ -275,9 +283,10 @@ onMounted(() => {
 }
 
 .hero-subtitle {
-  margin: 12px 0 0;
-  font-size: 18px;
-  color: #64748b;
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 0;
+  min-height: 40px;
 }
 
 .hero-prompt {
@@ -356,7 +365,7 @@ onMounted(() => {
   }
 
   .hero-subtitle {
-    font-size: 15px;
+    min-height: 34px;
   }
 }
 
