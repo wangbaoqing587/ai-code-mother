@@ -1,7 +1,7 @@
 # ai-code-mother 项目架构文档
 
 > 版本：0.0.1-SNAPSHOT  
-> 最后更新：2026-08-05
+> 最后更新：2026-08-28
 
 ---
 
@@ -12,59 +12,85 @@
 3. [系统架构](#3-系统架构)
 4. [代码目录结构](#4-代码目录结构)
 5. [核心模块说明](#5-核心模块说明)
-6. [数据库设计](#6-数据库设计)
-7. [REST API 接口文档](#7-rest-api-接口文档)
-8. [核心业务流程](#8-核心业务流程)
-9. [AI 集成方案](#9-ai-集成方案)
-10. [配置说明](#10-配置说明)
-11. [部署与运行](#11-部署与运行)
-12. [使用指南](#12-使用指南)
+6. [LangGraph4j 工作流](#6-langgraph4j-工作流)
+7. [数据库设计](#7-数据库设计)
+8. [REST API 接口文档](#8-rest-api-接口文档)
+9. [核心业务流程](#9-核心业务流程)
+10. [AI 集成方案](#10-ai-集成方案)
+11. [配置说明](#11-配置说明)
+12. [部署与运行](#12-部署与运行)
 13. [注意事项与已知问题](#13-注意事项与已知问题)
 
 ---
 
 ## 1. 项目概述
 
-**ai-code-mother** 是一个基于 AI 的「对话式代码生成平台」后端服务。用户通过自然语言与 AI 对话，驱动 AI 自动生成前端代码，支持三种生成模式：
+**ai-code-mother** 是一个基于 AI 的「对话式代码生成平台」，包含 Spring Boot 后端与 Vue3 前端。用户通过自然语言与 AI 对话，驱动 AI 自动生成前端代码，支持三种生成模式：
 
 | 模式 | 枚举值 | 说明 |
 |------|--------|------|
 | 原生 HTML | `html` | 生成单个 HTML 文件 |
 | 多文件 | `multi_file` | 生成 HTML + CSS + JS 三文件 |
-| Vue 工程 | `vue_project` | 生成完整 Vue3 + Vite 工程（当前默认） |
+| Vue 工程 | `vue_project` | 生成完整 Vue3 + Vite 工程 |
 
 核心能力：
 
 - 流式 SSE 实时输出 AI 生成内容
+- 创建应用时 AI 智能路由代码生成类型 + AI 生成应用名
 - 对话历史持久化（MySQL）+ AI 记忆（Redis）
-- 代码文件自动落盘
-- Vue 项目自动 `npm install` + `npm run build`
-- 一键部署预览
+- Vue 项目工具调用写文件 + 同步 `npm install` / `npm run build`
+- 一键部署预览、代码 ZIP 下载、部署后自动截图上传 COS
+- LangGraph4j 多节点代码生成工作流（实验性）
+- 用户级限流、精选应用 Redis 缓存
 
-> 本仓库为**纯后端项目**，无内置前端代码，需独立前端调用 API。
+仓库结构：
+
+| 目录 | 说明 |
+|------|------|
+| `src/` | Spring Boot 后端 |
+| `ai-code-mother-frontend/` | Vue3 + Vite 前端 |
+| `sql/` | 数据库建表脚本 |
+| `docs/` | 架构文档 |
+| `env.example` | 环境变量模板 |
 
 ---
 
 ## 2. 技术栈
 
+### 2.1 后端
+
 | 类别 | 技术 | 版本 |
 |------|------|------|
 | 语言 | Java | 21 |
 | 框架 | Spring Boot | 4.1.0 |
-| Web | spring-boot-starter-webmvc | parent 管理 |
-| AOP | spring-boot-starter-aspectj | parent 管理 |
 | ORM | MyBatis-Flex | 1.11.8 |
 | 数据库 | MySQL | 8+ |
 | 连接池 | HikariCP | 4.0.3 |
 | 缓存/Session | Spring Session + Redis | parent 管理 |
+| 分布式锁/限流 | Redisson | 3.50.0 |
 | AI 框架 | LangChain4j | 1.18.0 |
 | AI Starter | langchain4j-open-ai-spring-boot4-starter | 1.18.0-beta28 |
 | AI Redis | langchain4j-community-redis-spring-boot4-starter | 1.18.0-beta28 |
 | 响应式 | langchain4j-reactor | 1.1.0-beta7 |
+| 工作流 | LangGraph4j | 1.8.20 |
 | 本地缓存 | Caffeine | parent 管理 |
+| 对象存储 | 腾讯云 COS SDK | 5.6.227 |
+| 图片生成 | 阿里云 DashScope SDK | 2.22.30 |
+| 网页截图 | Selenium + WebDriverManager | 4.33.0 / 6.1.0 |
 | 工具库 | Hutool | 5.8.46 |
 | API 文档 | Knife4j (OpenAPI3) | 4.4.0 |
-| 其他 | Lombok | 1.18.44 |
+
+### 2.2 前端
+
+| 类别 | 技术 | 版本 |
+|------|------|------|
+| 框架 | Vue | 3.5 |
+| 构建 | Vite | 8.x |
+| UI | Ant Design Vue | 4.2 |
+| 状态 | Pinia | 4.x |
+| 路由 | Vue Router | 5.x |
+| HTTP | Axios | 1.x |
+| Markdown | markdown-it + highlight.js | — |
 
 ---
 
@@ -73,36 +99,43 @@
 ### 3.1 分层架构
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Controller 层                                               │
-│  AppController / UserController / ChatHistoryController      │
-│  StaticResourceController / HealthController                 │
-└──────────────────────────┬──────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  Controller 层                                                    │
+│  AppController / UserController / ChatHistoryController             │
+│  StaticResourceController / WorkflowSseController / HealthController│
+└──────────────────────────┬───────────────────────────────────────┘
                            │
-┌──────────────────────────▼──────────────────────────────────┐
-│  Service 层                                                  │
-│  AppServiceImpl / UserServiceImpl / ChatHistoryServiceImpl   │
-└──────────────────────────┬──────────────────────────────────┘
+┌──────────────────────────▼───────────────────────────────────────┐
+│  Service 层                                                       │
+│  AppServiceImpl / UserServiceImpl / ChatHistoryServiceImpl          │
+│  ScreenshotService / ProjectDownloadService                         │
+└──────────────────────────┬───────────────────────────────────────┘
                            │
-┌──────────────────────────▼──────────────────────────────────┐
-│  Core 层（业务编排）                                          │
-│  AiCodeGeneratorFacade                                       │
-│  StreamHandlerExecutor / CodeParserExecutor                  │
-│  CodeFileSaverExecutor / VueProjectBuilder                   │
-└──────────────────────────┬──────────────────────────────────┘
+┌──────────────────────────▼───────────────────────────────────────┐
+│  Core 层（业务编排）                                               │
+│  AiCodeGeneratorFacade                                            │
+│  StreamHandlerExecutor / CodeParserExecutor / CodeFileSaverExecutor│
+│  VueProjectBuilder                                                │
+└──────────────────────────┬───────────────────────────────────────┘
                            │
-┌──────────────────────────▼──────────────────────────────────┐
-│  AI 层                                                       │
-│  AiCodeGeneratorServiceFactory → AiCodeGeneratorService      │
-│  FileWriteTool / ValidatingChatMemoryStore                   │
-│  LangChain4j (ChatModel / StreamingChatModel / TokenStream)  │
-└──────────────────────────┬──────────────────────────────────┘
+┌──────────────────────────▼───────────────────────────────────────┐
+│  AI 层                                                            │
+│  AiCodeGeneratorServiceFactory / AiCodeGenTypeRoutingServiceFactory│
+│  AiAppNameServiceFactory / ToolManager / Guardrails               │
+│  LangChain4j (ChatModel / StreamingChatModel / TokenStream)       │
+└──────────────────────────┬───────────────────────────────────────┘
                            │
-┌──────────────────────────▼──────────────────────────────────┐
-│  基础设施                                                    │
-│  MySQL（实体持久化）/ Redis（Session + ChatMemory）           │
-│  文件系统（tmp/code_output, tmp/code_deploy）                │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────▼───────────────────────────────────────┐
+│  LangGraph4j 工作流（实验性，独立于主业务 API）                      │
+│  CodeGenWorkflow / CodeGenConcurrentWorkflow + Nodes + Tools      │
+└──────────────────────────┬───────────────────────────────────────┘
+                           │
+┌──────────────────────────▼───────────────────────────────────────┐
+│  基础设施                                                         │
+│  MySQL / Redis（Session + ChatMemory + 限流 + 缓存）             │
+│  COS（封面截图）/ 文件系统（tmp/code_output, tmp/code_deploy）      │
+│  外部 API（LLM / Pexels / DashScope）                             │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 横切关注点
@@ -111,6 +144,8 @@
 |------|----------|
 | 认证 | Spring Session（Redis 存储），Session Key = `user_login` |
 | 鉴权 | `@AuthCheck(mustRole = "admin")` + `AuthInterceptor` AOP |
+| 限流 | `@RateLimit` + Redisson 滑动窗口（AI 对话：每用户 60s 内 3 次） |
+| 缓存 | `@Cacheable` 精选应用列表（Redis，前 10 页） |
 | 异常 | `GlobalExceptionHandler` 统一处理 `BusinessException` |
 | 跨域 | `CorsConfig` 全局放行 |
 | API 文档 | Knife4j + springdoc-openapi |
@@ -119,36 +154,44 @@
 
 ```mermaid
 flowchart TB
-    subgraph Client["客户端（独立前端）"]
-        FE[Web Frontend]
+    subgraph Client["前端 ai-code-mother-frontend"]
+        FE[Vue3 Web App]
     end
 
-    subgraph Backend["ai-code-mother Backend :8123/api"]
+    subgraph Backend["Backend :8123/api"]
         CTRL[Controllers]
         SVC[Services]
-        CORE[AiCodeGeneratorFacade + Handlers]
+        CORE[AiCodeGeneratorFacade]
         AI[LangChain4j AI Services]
-        TOOL[FileWriteTool]
+        TOOL[ToolManager + AI Tools]
+        WF[LangGraph4j Workflow]
     end
 
     subgraph Storage["存储"]
         MySQL[(MySQL)]
-        Redis[(Redis Session + ChatMemory)]
+        Redis[(Redis)]
         FS[FileSystem tmp/]
+        COS[(腾讯云 COS)]
     end
 
     subgraph External["外部服务"]
-        LLM[OpenAI Compatible LLM API]
+        LLM[OpenAI Compatible LLM]
+        Pexels[Pexels API]
+        DashScope[DashScope 图片生成]
     end
 
-    FE -->|REST/SSE| CTRL
+    FE -->|REST/SSE + Cookie| CTRL
     CTRL --> SVC --> CORE --> AI
     AI -->|TokenStream| TOOL
     TOOL -->|writeFile| FS
     AI -->|HTTP| LLM
+    WF --> CORE
+    WF --> Pexels
+    WF --> DashScope
     SVC --> MySQL
     AI --> Redis
     CTRL -->|Session| Redis
+    SVC -->|截图上传| COS
 ```
 
 ---
@@ -157,143 +200,66 @@ flowchart TB
 
 ```
 ai-code-mother/
-├── pom.xml                                    # Maven 依赖配置
-├── sql/
-│   └── create_table.sql                       # 数据库建表脚本
-├── docs/
-│   └── ARCHITECTURE.md                        # 本文档
-├── src/
-│   ├── main/
-│   │   ├── java/com/wbq/aicodemother/
-│   │   │   ├── AiCodeMotherApplication.java   # Spring Boot 启动类
-│   │   │   │
-│   │   │   ├── annotation/                    # 自定义注解
-│   │   │   │   └── AuthCheck.java             # 权限校验注解
-│   │   │   │
-│   │   │   ├── aop/                           # AOP 切面
-│   │   │   │   └── AuthInterceptor.java       # 权限拦截器
-│   │   │   │
-│   │   │   ├── ai/                            # AI 核心层
-│   │   │   │   ├── AiCodeGeneratorService.java        # LangChain4j AI 服务接口
-│   │   │   │   ├── AiCodeGeneratorServiceFactory.java # AI 服务工厂（缓存+记忆）
-│   │   │   │   ├── memory/
-│   │   │   │   │   └── ValidatingChatMemoryStore.java # 对话记忆校验装饰器
-│   │   │   │   ├── model/
-│   │   │   │   │   ├── HtmlCodeResult.java            # HTML 结构化输出
-│   │   │   │   │   ├── MultiFileCodeResult.java       # 多文件结构化输出
-│   │   │   │   │   └── message/                       # 流式消息模型
-│   │   │   │   │       ├── StreamMessage.java
-│   │   │   │   │       ├── AiResponseMessage.java
-│   │   │   │   │       ├── ToolRequestMessage.java
-│   │   │   │   │       └── ToolExecutedMessage.java
-│   │   │   │   └── tools/
-│   │   │   │       └── FileWriteTool.java             # AI 文件写入工具
-│   │   │   │
-│   │   │   ├── common/                        # 通用组件
-│   │   │   │   ├── BaseResponse.java          # 统一响应体
-│   │   │   │   ├── PageRequest.java           # 分页请求基类
-│   │   │   │   ├── DeleteRequest.java         # 删除请求
-│   │   │   │   └── ResultUtils.java           # 响应工具类
-│   │   │   │
-│   │   │   ├── config/                        # Spring 配置
-│   │   │   │   ├── CorsConfig.java            # 跨域配置
-│   │   │   │   ├── JsonConfig.java            # JSON 序列化配置
-│   │   │   │   └── ReasoningStreamingChatModelConfig.java # 推理模型配置
-│   │   │   │
-│   │   │   ├── constant/                      # 常量
-│   │   │   │   ├── AppConstant.java           # 应用相关常量
-│   │   │   │   └── UserConstant.java          # 用户相关常量
-│   │   │   │
-│   │   │   ├── controller/                    # REST 控制器
-│   │   │   │   ├── AppController.java         # 应用管理 + 代码生成
-│   │   │   │   ├── UserController.java        # 用户管理
-│   │   │   │   ├── ChatHistoryController.java # 对话历史
-│   │   │   │   ├── StaticResourceController.java # 静态资源预览
-│   │   │   │   └── HealthController.java      # 健康检查
-│   │   │   │
-│   │   │   ├── core/                          # 核心业务编排
-│   │   │   │   ├── AiCodeGeneratorFacade.java # 代码生成统一入口
-│   │   │   │   ├── builder/
-│   │   │   │   │   └── VueProjectBuilder.java # Vue 项目构建（npm）
-│   │   │   │   ├── handler/
-│   │   │   │   │   ├── StreamHandlerExecutor.java    # 流处理器路由
-│   │   │   │   │   ├── SimpleTextStreamHandler.java  # HTML/MULTI_FILE 流处理
-│   │   │   │   │   └── JsonMessageStreamHandler.java # VUE_PROJECT 流处理
-│   │   │   │   ├── parser/
-│   │   │   │   │   ├── CodeParser.java
-│   │   │   │   │   ├── MultiFileCodeParser.java
-│   │   │   │   │   └── CodeParserExecutor.java       # 代码解析执行器
-│   │   │   │   └── saver/
-│   │   │   │       ├── CodeFileSaverTemplate.java    # 保存模板（模板方法模式）
-│   │   │   │       ├── HtmlCodeFileSaverTemplate.java
-│   │   │   │       ├── MultiFileCodeFileSaverTemplate.java
-│   │   │   │       └── CodeFileSaverExecutor.java    # 保存执行器
-│   │   │   │
-│   │   │   ├── exception/                     # 异常体系
-│   │   │   │   ├── BusinessException.java
-│   │   │   │   ├── ErrorCode.java
-│   │   │   │   ├── GlobalExceptionHandler.java
-│   │   │   │   └── ThrowUtils.java
-│   │   │   │
-│   │   │   ├── generator/                     # MyBatis 代码生成器
-│   │   │   │   └── MyBatisCodeGenerator.java
-│   │   │   │
-│   │   │   ├── mapper/                        # MyBatis-Flex Mapper
-│   │   │   │   ├── UserMapper.java
-│   │   │   │   ├── AppMapper.java
-│   │   │   │   └── ChatHistoryMapper.java
-│   │   │   │
-│   │   │   ├── model/                         # 数据模型
-│   │   │   │   ├── dto/                       # 请求 DTO
-│   │   │   │   │   ├── app/
-│   │   │   │   │   ├── user/
-│   │   │   │   │   └── chathistory/
-│   │   │   │   ├── entity/                    # 数据库实体
-│   │   │   │   │   ├── User.java
-│   │   │   │   │   ├── App.java
-│   │   │   │   │   └── ChatHistory.java
-│   │   │   │   ├── enums/                     # 枚举
-│   │   │   │   │   ├── CodeGenTypeEnum.java
-│   │   │   │   │   ├── ChatHistoryMessageTypeEnum.java
-│   │   │   │   │   └── UserRoleEnum.java
-│   │   │   │   └── vo/                        # 响应 VO
-│   │   │   │       ├── AppVO.java
-│   │   │   │       ├── UserVO.java
-│   │   │   │       └── LoginUserVO.java
-│   │   │   │
-│   │   │   └── service/                       # 服务层
-│   │   │       ├── AppService.java
-│   │   │       ├── UserService.java
-│   │   │       ├── ChatHistoryService.java
-│   │   │       └── impl/
-│   │   │           ├── AppServiceImpl.java
-│   │   │           ├── UserServiceImpl.java
-│   │   │           └── ChatHistoryServiceImpl.java
-│   │   │
-│   │   └── resources/
-│   │       ├── application.yaml               # 主配置
-│   │       ├── application-local.yaml         # 本地配置（gitignore，需自行创建）
-│   │       ├── mapper/                        # MyBatis XML
-│   │       └── prompt/                        # AI System Prompt
-│   │           ├── codegen-html-system-prompt.txt
-│   │           ├── codegen-multi-file-system-prompt.txt
-│   │           └── codegen-vue-project-system-prompt.txt
-│   │
-│   └── test/                                  # 单元测试
-│       └── java/com/wbq/aicodemother/
-│           ├── AiCodeMotherApplicationTests.java
-│           ├── ai/AiCodeGeneratorServiceTest.java
-│           └── core/
-│               ├── AiCodeGeneratorFacadeTest.java
-│               └── CodeParserTest.java
-│
-└── tmp/                                       # 运行时生成（gitignore）
-    ├── code_output/                           # AI 生成代码目录
-    │   ├── html_{appId}/
-    │   ├── multi_file_{appId}/
-    │   └── vue_project_{appId}/
-    └── code_deploy/                           # 部署目录
-        └── {deployKey}/
+├── pom.xml
+├── env.example                              # 环境变量模板
+├── sql/create_table.sql
+├── docs/ARCHITECTURE.md
+├── ai-code-mother-frontend/                 # Vue3 前端
+│   ├── src/
+│   │   ├── api/                             # OpenAPI 生成的接口客户端
+│   │   ├── pages/                           # 页面（首页/对话/管理后台）
+│   │   ├── components/                      # 通用组件（SSE 渲染、输入框等）
+│   │   ├── stores/                          # Pinia 状态
+│   │   ├── utils/sse.ts                     # SSE 工具
+│   │   └── config/env.ts                    # API / 部署域名配置
+│   └── package.json
+├── src/main/java/com/wbq/aicodemother/
+│   ├── annotation/                          # @AuthCheck
+│   ├── aop/                                 # AuthInterceptor
+│   ├── ai/                                  # LangChain4j AI 服务
+│   │   ├── AiCodeGeneratorService.java
+│   │   ├── AiCodeGeneratorServiceFactory.java
+│   │   ├── AiCodeGenTypeRoutingService*.java
+│   │   ├── AiAppNameService*.java
+│   │   ├── guardrail/                       # 输入/输出护轨
+│   │   ├── memory/ValidatingChatMemoryStore.java
+│   │   ├── model/                           # 结构化输出 + 流式消息
+│   │   └── tools/                           # FileWrite/Read/Modify/Delete 等
+│   ├── cache/                               # 缓存失效
+│   ├── config/                              # Spring 配置（模型/COS/Redis/截图）
+│   ├── controller/                          # REST 控制器
+│   ├── core/                                # 代码生成编排
+│   │   ├── AiCodeGeneratorFacade.java
+│   │   ├── builder/VueProjectBuilder.java
+│   │   ├── handler/                         # 流式响应后处理
+│   │   ├── parser/                          # HTML/MultiFile 解析
+│   │   └── saver/                           # 文件落盘
+│   ├── langgraph4j/                         # LangGraph4j 工作流
+│   │   ├── CodeGenWorkflow.java             # 串行工作流
+│   │   ├── CodeGenConcurrentWorkflow.java   # 并发图片收集工作流
+│   │   ├── node/                            # 各工作流节点
+│   │   ├── tools/                           # 图片搜索/Logo/Mermaid 等
+│   │   └── state/WorkflowContext.java
+│   ├── manager/CosManager.java
+│   ├── ratelimit/                           # Redisson 限流
+│   ├── service/                             # 业务服务层
+│   └── utils/WebScreenshotUtils.java
+└── src/main/resources/
+    ├── application.yaml                     # 主配置（支持环境变量）
+    ├── mapper/
+    └── prompt/                              # AI System Prompt
+```
+
+运行时目录（gitignore）：
+
+```
+tmp/
+├── code_output/
+│   ├── html_{appId}/
+│   ├── multi_file_{appId}/
+│   └── vue_project_{appId}/    # 含 dist/
+└── code_deploy/
+    └── {deployKey}/
 ```
 
 ---
@@ -302,84 +268,150 @@ ai-code-mother/
 
 ### 5.1 AiCodeGeneratorFacade
 
-代码生成的统一入口，根据 `CodeGenTypeEnum` 分发到不同处理链路：
+代码生成统一入口，按 `CodeGenTypeEnum` 分发：
 
-| 类型 | 输入 | 输出 | 后处理 |
-|------|------|------|--------|
-| HTML | `Flux<String>` | 流式文本 | 流结束后解析 + 保存 `index.html` |
-| MULTI_FILE | `Flux<String>` | 流式文本 | 流结束后解析 + 保存三文件 |
-| VUE_PROJECT | `TokenStream` | JSON 消息流 | 工具调用写文件 + 异步 npm build |
+| 类型 | AI 调用 | 流式输出 | 后处理 |
+|------|---------|----------|--------|
+| HTML | `generateHtmlCodeStream` | `Flux<String>` | 流结束后解析 + 保存 `index.html` |
+| MULTI_FILE | `generateMultiFileCodeStream` | `Flux<String>` | 流结束后解析 + 保存三文件 |
+| VUE_PROJECT | `generateVueProjectCodeStream` | `TokenStream` → JSON 消息 | 工具写文件 + **同步** npm build |
 
 ### 5.2 AiCodeGeneratorServiceFactory
 
 - 按 `appId + codeGenType` 缓存 AI 服务实例（Caffeine，最大 1000，写后 30min / 访问后 10min 过期）
 - 每个应用独立 `MessageWindowChatMemory`（最多 20 条，Redis 持久化）
-- VUE_PROJECT 模式使用推理模型 + `FileWriteTool`，每轮对话前清空记忆
+- 创建实例时从 `chat_history` 加载历史到记忆，AI 消息会清理工具调用标记
+- VUE_PROJECT 使用 `reasoningStreamingChatModelPrototype`（prototype 作用域，避免并发冲突）
+- HTML/MULTI_FILE 使用 `streamingChatModelPrototype` + 同步 `ChatModel`
+- VUE_PROJECT 注册 `ToolManager` 全部工具，最大工具调用轮次 20
+- 输入护轨：`PromptSafetyInputGuardrail`
 
-### 5.3 StreamHandlerExecutor
+### 5.3 AI 工具集（VUE_PROJECT）
+
+| 工具 | 说明 |
+|------|------|
+| `FileWriteTool` | 写入项目文件 |
+| `FileReadTool` | 读取项目文件 |
+| `FileModifyTool` | 修改项目文件 |
+| `FileDeleteTool` | 删除项目文件 |
+| `FileDirReadTool` | 读取目录结构 |
+| `ExitTool` | 结束工具调用循环 |
+
+### 5.4 StreamHandlerExecutor
 
 流式响应后处理路由：
 
 - `HTML / MULTI_FILE` → `SimpleTextStreamHandler`：收集完整文本，保存 AI 回复到 `chat_history`
-- `VUE_PROJECT` → `JsonMessageStreamHandler`：解析 JSON 消息（AI 文本 / 工具请求 / 工具执行），格式化输出，保存历史，触发 Vue 构建
+- `VUE_PROJECT` → `JsonMessageStreamHandler`：解析 JSON 消息（AI 文本 / 工具请求 / 工具执行），格式化输出，保存历史
 
-### 5.4 FileWriteTool
+### 5.5 AppServiceImpl 关键逻辑
 
-LangChain4j AI 工具，供 VUE_PROJECT 模式调用：
+**创建应用**（并行执行）：
 
-```
-writeFile(relativeFilePath, content, totalFiles, appId)
-→ 写入 tmp/code_output/vue_project_{appId}/{relativeFilePath}
-→ 达到 totalFiles 后返回结束信号
-```
+1. `AiAppNameService` 生成应用名（失败则取 prompt 前 12 字符）
+2. `AiCodeGenTypeRoutingService` 智能选择 `html / multi_file / vue_project`
+3. 初始 `genStatus = idle`
 
-### 5.5 VueProjectBuilder
+**对话生成**：
 
-代码生成完成后异步执行：
+1. 校验权限 + `genStatus != generating`
+2. 保存用户消息 → 更新 `genStatus = generating`
+3. 调用 `AiCodeGeneratorFacade`，3 分钟超时
+4. 完成 → `idle`，失败 → `failed`
+
+**部署**：
+
+1. 复制 `tmp/code_output/{codeGenType}_{appId}/` → `tmp/code_deploy/{deployKey}/`
+2. Vue 项目返回 URL 追加 `/dist/index.html`
+3. 异步 Selenium 截图 → 上传 COS → 更新 `cover`
+
+### 5.6 VueProjectBuilder
+
+代码生成完成后**同步**执行（阻塞 SSE 完成事件）：
 
 1. `npm install`（超时 5 分钟）
 2. `npm run build`（超时 3 分钟）
 3. 验证 `dist/` 目录生成
 
-使用 Java 21 虚拟线程，不阻塞主流程。
+---
+
+## 6. LangGraph4j 工作流
+
+独立于主业务 API 的实验性模块，通过 `WorkflowSseController` 暴露。
+
+### 6.1 CodeGenWorkflow（串行）
+
+```
+START → image_collector → prompt_enhancer → router → code_generator
+      → code_quality_check ─┬─ fail → code_generator（重试）
+                            ├─ skip_build → END（HTML/MULTI_FILE）
+                            └─ build → project_builder → END（VUE_PROJECT）
+```
+
+### 6.2 CodeGenConcurrentWorkflow（并发图片收集）
+
+```
+START → image_plan ─┬→ content_image_collector ─┐
+                    ├→ illustration_collector ──┤
+                    ├→ diagram_collector ────────┼→ image_aggregator → prompt_enhancer → ...
+                    └→ logo_collector ───────────┘
+```
+
+### 6.3 工作流工具
+
+| 工具 | 说明 |
+|------|------|
+| `ImageSearchTool` | Pexels 图片搜索 |
+| `LogoGeneratorTool` | DashScope 生成 Logo |
+| `MermaidDiagramTool` | Mermaid 图表生成 |
+| `UndrawIllustrationTool` | 插画资源 |
+
+### 6.4 工作流 API
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/workflow/execute` | 同步执行，返回 `WorkflowContext` |
+| GET | `/api/workflow/execute-flux?prompt=` | Flux SSE 流式 |
+| GET | `/api/workflow/execute-sse?prompt=` | SseEmitter 流式 |
+
+> 工作流内 `CodeGeneratorNode` 当前使用固定 `appId=0`，尚未与业务应用体系完全整合。
 
 ---
 
-## 6. 数据库设计
+## 7. 数据库设计
 
-### 6.1 ER 关系
+### 7.1 ER 关系
 
 ```
 user (1) ──── (N) app (1) ──── (N) chat_history
 ```
 
-### 6.2 表结构
+### 7.2 表结构
 
-#### user — 用户表
+#### user
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | bigint PK AUTO_INCREMENT | 用户 ID |
+| id | bigint PK | 用户 ID |
 | userAccount | varchar(256) UNIQUE | 账号 |
 | userPassword | varchar(512) | 密码（MD5 + 盐） |
 | userName | varchar(256) | 昵称 |
 | userAvatar | varchar(1024) | 头像 URL |
 | userProfile | varchar(512) | 简介 |
-| userRole | varchar(256) DEFAULT 'user' | 角色：user / admin |
-| editTime | datetime | 编辑时间 |
-| createTime | datetime | 创建时间 |
-| updateTime | datetime | 更新时间 |
+| userRole | varchar(256) DEFAULT 'user' | user / admin |
+| editTime / createTime / updateTime | datetime | 时间戳 |
 | isDelete | tinyint DEFAULT 0 | 逻辑删除 |
 
-#### app — 应用表
+#### app
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | bigint PK | 应用 ID（雪花算法） |
+| id | bigint PK | 应用 ID（实体层使用雪花算法） |
 | appName | varchar(256) | 应用名称 |
-| cover | varchar(512) | 封面 |
+| cover | varchar(512) | 封面（COS 截图 URL） |
 | initPrompt | text | 初始化 prompt |
-| codeGenType | varchar(64) | 代码生成类型（html / multi_file / vue_project） |
+| codeGenType | varchar(64) | html / multi_file / vue_project |
+| genStatus | varchar(32) DEFAULT 'idle' | idle / generating / failed |
 | deployKey | varchar(64) UNIQUE | 部署标识（6 位随机字符串） |
 | deployedTime | datetime | 部署时间 |
 | priority | int DEFAULT 0 | 优先级（99 = 精选） |
@@ -387,12 +419,12 @@ user (1) ──── (N) app (1) ──── (N) chat_history
 | editTime / createTime / updateTime | datetime | 时间戳 |
 | isDelete | tinyint DEFAULT 0 | 逻辑删除 |
 
-#### chat_history — 对话历史表
+#### chat_history
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | bigint PK | 记录 ID（雪花算法） |
-| message | text | 消息内容 |
+| message | mediumtext | 消息内容 |
 | messageType | varchar(32) | user / ai |
 | appId | bigint | 应用 ID |
 | userId | bigint | 用户 ID |
@@ -401,24 +433,25 @@ user (1) ──── (N) app (1) ──── (N) chat_history
 
 **索引**：`idx_appId_createTime(appId, createTime)` — 游标分页核心索引
 
-### 6.3 枚举
+### 7.3 枚举
 
 | 枚举 | 值 | 说明 |
 |------|-----|------|
 | `CodeGenTypeEnum` | html, multi_file, vue_project | 代码生成类型 |
+| `AppGenStatusEnum` | idle, generating, failed | 代码生成状态 |
 | `ChatHistoryMessageTypeEnum` | user, ai | 消息类型 |
 | `UserRoleEnum` | user, admin | 用户角色 |
 
 ---
 
-## 7. REST API 接口文档
+## 8. REST API 接口文档
 
-> **全局前缀**：`/api`（`server.servlet.context-path`）  
+> **全局前缀**：`/api`  
 > **统一响应**：`BaseResponse<T> { code, data, message }`，成功时 `code = 0`  
-> **认证方式**：Session Cookie（登录后自动携带）  
+> **认证方式**：Session Cookie  
 > **在线文档**：`http://localhost:8123/api/doc.html`
 
-### 7.1 错误码
+### 8.1 错误码
 
 | code | 说明 |
 |------|------|
@@ -431,608 +464,260 @@ user (1) ──── (N) app (1) ──── (N) chat_history
 | 50000 | 系统内部异常 |
 | 50001 | 操作失败 |
 
----
+### 8.2 健康检查
 
-### 7.2 健康检查
+**GET** `/api/health/` — 公开，返回 `{ "code": 0, "data": "ok" }`
 
-**GET** `/api/health/`
+### 8.3 用户模块 `/api/user`
 
-| 项 | 值 |
-|----|-----|
-| 权限 | 公开 |
-| 响应 | `{ "code": 0, "data": "ok", "message": "" }` |
-
----
-
-### 7.3 用户模块 `/api/user`
-
-#### POST `/user/register` — 用户注册
-
-**请求体**：
-```json
-{
-  "userAccount": "testuser",
-  "userPassword": "12345678",
-  "checkPassword": "12345678"
-}
-```
-
-**响应**：`BaseResponse<Long>` — 新用户 ID
-
----
-
-#### POST `/user/login` — 用户登录
-
-**请求体**：
-```json
-{
-  "userAccount": "testuser",
-  "userPassword": "12345678"
-}
-```
-
-**响应**：`BaseResponse<LoginUserVO>`
-
-```json
-{
-  "code": 0,
-  "data": {
-    "id": 1,
-    "userAccount": "testuser",
-    "userName": "testuser",
-    "userAvatar": null,
-    "userRole": "user"
-  }
-}
-```
-
-登录成功后 Session 写入 Redis，后续请求自动携带 Cookie。
-
----
-
-#### GET `/user/get/login` — 获取当前登录用户
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录 |
-| 响应 | `BaseResponse<LoginUserVO>` |
-
----
-
-#### POST `/user/logout` — 退出登录
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录 |
-| 响应 | `BaseResponse<Boolean>` |
-
----
-
-#### 管理员接口（需 `@AuthCheck admin`）
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/user/add` | 创建用户（默认密码 12345678） |
-| GET | `/user/get?id=` | 获取用户实体 |
-| POST | `/user/delete` | 删除用户 |
-| POST | `/user/update` | 更新用户 |
-| POST | `/user/list/page/vo` | 分页查询用户 |
-
-**UserQueryRequest 分页参数**：
-```json
-{
-  "pageNum": 1,
-  "pageSize": 10,
-  "userAccount": "",
-  "userName": "",
-  "userRole": "",
-  "sortField": "createTime",
-  "sortOrder": "descend"
-}
-```
-
----
-
-### 7.4 应用模块 `/api/app`
-
-#### POST `/app/add` — 创建应用
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录 |
-
-**请求体**：
-```json
-{
-  "initPrompt": "帮我做一个待办事项管理页面",
-  "appName": "待办事项"
-}
-```
-
-**响应**：`BaseResponse<Long>` — 应用 ID
-
-**后端逻辑**：
-- `appName` 未传时取 `initPrompt` 前 12 字符
-- `codeGenType` 默认 `vue_project`
-- `priority` 默认 1
-
----
-
-#### GET `/app/chat/gen/code` — 流式 AI 代码生成（核心接口）
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录（仅应用创建者） |
-| Content-Type | `text/event-stream` |
-
-**Query 参数**：
-
-| 参数 | 类型 | 必填 | 说明 |
+| 方法 | 路径 | 权限 | 说明 |
 |------|------|------|------|
-| appId | Long | 是 | 应用 ID |
-| message | String | 是 | 用户消息 |
+| POST | `/user/register` | 公开 | 注册 |
+| POST | `/user/login` | 公开 | 登录 |
+| GET | `/user/get/login` | 登录 | 获取当前用户 |
+| POST | `/user/logout` | 登录 | 退出 |
+| POST | `/user/add` | admin | 创建用户 |
+| GET | `/user/get?id=` | admin | 获取用户 |
+| POST | `/user/delete` | admin | 删除用户 |
+| POST | `/user/update` | admin | 更新用户 |
+| POST | `/user/list/page/vo` | admin | 分页查询 |
+
+### 8.4 应用模块 `/api/app`
+
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| POST | `/app/add` | 登录 | 创建应用（AI 路由类型 + AI 命名） |
+| GET | `/app/chat/gen/code` | 登录（创建者） | SSE 流式代码生成，限流 3 次/60s |
+| GET | `/app/download/{appId}` | 登录（创建者） | 下载代码 ZIP |
+| POST | `/app/deploy` | 登录（创建者） | 部署，返回 URL |
+| POST | `/app/update` | 登录（创建者） | 更新应用名 |
+| POST | `/app/delete` | 登录（创建者/admin） | 删除应用 |
+| GET | `/app/get/vo?id=` | 公开 | 应用详情 |
+| POST | `/app/my/list/page/vo` | 登录 | 我的应用（pageSize ≤ 20） |
+| POST | `/app/good/list/page/vo` | 公开 | 精选应用（priority=99，Redis 缓存） |
+| POST | `/app/admin/*` | admin | 管理接口 |
 
 **SSE 响应格式**：
 
 ```
 data: {"d":"<chunk>"}
-
-data: {"d":"<chunk>"}
-
 event: done
 data: "e"
 ```
 
-- 普通数据块：`{"d": "<内容片段>"}`
-- 结束事件：`event: done`, `data: "e"`
-- VUE_PROJECT 模式下，`d` 字段内容为格式化后的文本（含工具调用信息）
+**部署 URL**：
 
-**前端接入示例**：
-```javascript
-const eventSource = new EventSource(
-  `/api/app/chat/gen/code?appId=${appId}&message=${encodeURIComponent(message)}`,
-  { withCredentials: true }
-);
+- HTML/MULTI_FILE：`http://localhost:8080/{deployKey}/`
+- VUE_PROJECT：`http://localhost:8080/{deployKey}/dist/index.html`
 
-eventSource.onmessage = (event) => {
-  const { d } = JSON.parse(event.data);
-  appendContent(d);
-};
+### 8.5 对话历史 `/api/chatHistory`
 
-eventSource.addEventListener('done', () => {
-  eventSource.close();
-});
-```
+| 方法 | 路径 | 权限 | 说明 |
+|------|------|------|------|
+| GET | `/chatHistory/app/{appId}` | 登录（创建者/admin） | 游标分页（`pageSize`, `lastCreateTime`） |
+| POST | `/chatHistory/admin/list/page/vo` | admin | 管理员分页 |
 
----
+### 8.6 静态资源 `/api/static`
 
-#### POST `/app/deploy` — 部署应用
+**GET** `/api/static/{deployKey}/**` — 公开
 
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录（仅应用创建者） |
-
-**请求体**：
-```json
-{
-  "appId": 1234567890
-}
-```
-
-**响应**：`BaseResponse<String>` — 部署 URL
+前端开发预览使用 `{codeGenType}_{appId}` 作为路径键：
 
 ```
-http://localhost:8080/{deployKey}/
+GET /api/static/vue_project_123/dist/index.html
 ```
 
-**逻辑**：
-1. 生成/复用 6 位 `deployKey`
-2. 复制 `tmp/code_output/{codeGenType}_{appId}/` → `tmp/code_deploy/{deployKey}/`
-3. 更新数据库 `deployKey` + `deployedTime`
+### 8.7 工作流 `/api/workflow`
+
+见 [6.4 工作流 API](#64-工作流-api)。
 
 ---
 
-#### POST `/app/update` — 更新应用
+## 9. 核心业务流程
 
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录（仅创建者，仅可改 appName） |
-
-```json
-{ "id": 123, "appName": "新名称" }
-```
-
----
-
-#### POST `/app/delete` — 删除应用
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录（创建者或 admin） |
-
-```json
-{ "id": 123 }
-```
-
-删除应用时同步删除关联的 `chat_history` 记录。
-
----
-
-#### GET `/app/get/vo?id=` — 获取应用详情
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 公开 |
-| 响应 | `BaseResponse<AppVO>`（含创建者 UserVO） |
-
----
-
-#### POST `/app/my/list/page/vo` — 分页查自己的应用
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录 |
-| pageSize 上限 | 20 |
-
-```json
-{
-  "pageNum": 1,
-  "pageSize": 10,
-  "appName": "",
-  "sortField": "createTime",
-  "sortOrder": "descend"
-}
-```
-
----
-
-#### POST `/app/good/list/page/vo` — 分页查精选应用
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 公开 |
-| 筛选条件 | priority = 99 |
-
----
-
-#### 管理员接口
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/app/admin/delete` | 删除任意应用 |
-| POST | `/app/admin/update` | 更新任意应用（AppAdminUpdateRequest） |
-| GET | `/app/admin/get?id=` | 获取应用详情 |
-| POST | `/app/admin/list/page/vo` | 分页查全部应用 |
-
----
-
-### 7.5 对话历史 `/api/chatHistory`
-
-#### GET `/chatHistory/app/{appId}` — 游标分页查应用对话
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 需登录（创建者或 admin） |
-
-**Query 参数**：
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| pageSize | int | 10 | 每页条数（1-50） |
-| lastCreateTime | datetime | null | 游标，取此时间之前的记录 |
-
-**响应**：`BaseResponse<Page<ChatHistory>>`
-
-**游标分页用法**：
-1. 首次请求不传 `lastCreateTime`
-2. 取返回结果中最后一条的 `createTime` 作为下次请求的 `lastCreateTime`
-3. 重复直到返回空列表
-
----
-
-#### POST `/chatHistory/admin/list/page/vo` — 管理员查全部对话
-
-| 项 | 值 |
-|----|-----|
-| 权限 | admin |
-
----
-
-### 7.6 静态资源 `/api/static`
-
-#### GET `/static/{deployKey}/**` — 静态资源预览
-
-| 项 | 值 |
-|----|-----|
-| 权限 | 公开 |
-
-**示例**：
-```
-GET /api/static/abc123/index.html
-GET /api/static/abc123/style.css
-```
-
-> 注意：当前实现从 `tmp/code_output/{deployKey}/` 读取，与代码实际存储路径 `{codeGenType}_{appId}` 不一致，详见 [已知问题](#13-注意事项与已知问题)。
-
----
-
-## 8. 核心业务流程
-
-### 8.1 完整使用流程
+### 9.1 完整使用流程
 
 ```
 1. 注册/登录          POST /api/user/register → POST /api/user/login
 2. 创建应用           POST /api/app/add { initPrompt }
 3. 对话生成代码       GET  /api/app/chat/gen/code?appId=&message=  (SSE)
 4. 查看对话历史       GET  /api/chatHistory/app/{appId}
-5. 部署预览           POST /api/app/deploy { appId }
-6. 访问部署 URL       http://localhost:8080/{deployKey}/
+5. 下载代码           GET  /api/app/download/{appId}
+6. 部署预览           POST /api/app/deploy { appId }
+7. 访问部署 URL       http://localhost:8080/{deployKey}/
 ```
 
-### 8.2 代码生成流程
+### 9.2 代码生成流程
 
 ```
 GET /api/app/chat/gen/code
   │
   ├─ AppServiceImpl.chatToGenCode()
-  │    ├─ 校验 appId / message / 权限
-  │    ├─ VUE_PROJECT: 重置 FileWriteTool 计数 + 清空 Redis 记忆
+  │    ├─ 校验 appId / message / 权限 / genStatus
   │    ├─ 保存用户消息 → chat_history
+  │    ├─ genStatus = generating
   │    └─ AiCodeGeneratorFacade.generateAndSaveCodeStream()
   │
   ├─ 按 codeGenType 分发
-  │    │
-  │    ├─ HTML / MULTI_FILE
-  │    │    ├─ AiCodeGeneratorService.generateXxxCodeStream()
-  │    │    ├─ Flux<String> 流式文本
-  │    │    ├─ 流结束后: CodeParserExecutor 解析 → CodeFileSaverExecutor 保存
-  │    │    └─ SimpleTextStreamHandler 保存 AI 回复
-  │    │
-  │    └─ VUE_PROJECT
-  │         ├─ AiCodeGeneratorService.generateVueProjectCodeStream()
-  │         ├─ TokenStream → JSON 消息流 (ai_response / tool_request / tool_executed)
-  │         ├─ FileWriteTool 写入文件到 tmp/code_output/vue_project_{appId}/
-  │         ├─ JsonMessageStreamHandler 格式化 + 保存 AI 回复
-  │         └─ 完成后异步 VueProjectBuilder.buildProjectAsync()
+  │    ├─ HTML / MULTI_FILE → Flux 流式 → 解析 → 落盘
+  │    └─ VUE_PROJECT → TokenStream → 工具写文件 → 同步 npm build
   │
-  └─ 包装为 SSE 返回前端
+  ├─ StreamHandlerExecutor 保存 AI 回复
+  ├─ genStatus = idle / failed
+  └─ SSE 返回前端
 ```
 
-### 8.3 代码输出目录
+### 9.3 代码输出目录
 
-| 类型 | 目录 | 文件 |
-|------|------|------|
+| 类型 | 目录 | 主要文件 |
+|------|------|----------|
 | HTML | `tmp/code_output/html_{appId}/` | index.html |
 | MULTI_FILE | `tmp/code_output/multi_file_{appId}/` | index.html, style.css, script.js |
 | VUE_PROJECT | `tmp/code_output/vue_project_{appId}/` | 完整 Vue 工程 + dist/ |
 
-### 8.4 对话记忆策略
+### 9.4 对话记忆策略
 
-| 模式 | 记忆来源 | 说明 |
-|------|----------|------|
-| HTML / MULTI_FILE | 加载 user + ai 消息（最近 20 条） | 完整对话上下文 |
-| VUE_PROJECT | 仅加载 user 消息（最近 20 条） | 避免 tool call 链污染记忆 |
-
-记忆存储：Redis（TTL 3600s），经 `ValidatingChatMemoryStore` 过滤无效 AiMessage、修复 tool call 链。
+| 环节 | 策略 |
+|------|------|
+| 记忆窗口 | 最近 20 条消息 |
+| 持久化 | Redis（TTL 3600s），经 `ValidatingChatMemoryStore` 过滤无效消息 |
+| 历史加载 | 每次创建 AI 服务实例时从 DB 加载，AI 消息清理工具调用标记 |
+| 并发保护 | StreamingChatModel 使用 prototype 作用域 |
 
 ---
 
-## 9. AI 集成方案
+## 10. AI 集成方案
 
-### 9.1 架构
+### 10.1 模型配置
 
-```
-AiCodeGeneratorService (@SystemMessage fromResource)
-    ↑ AiServices.builder() 动态代理
-AiCodeGeneratorServiceFactory
-    ├── ChatModel                    → 同步调用
-    ├── openAiStreamingChatModel     → HTML/MULTI_FILE 流式
-    ├── reasoningStreamingChatModel  → VUE_PROJECT 流式 + 工具调用
-    ├── ChatMemoryStore              → Redis + ValidatingChatMemoryStore
-    └── Caffeine Cache               → 按 appId_codeGenType 缓存实例
-```
+| Bean | 配置前缀 | 用途 |
+|------|----------|------|
+| `openAiChatModel` | `langchain4j.open-ai.chat-model` | 同步调用 |
+| `streamingChatModelPrototype` | `langchain4j.open-ai.streaming-chat-model` | HTML/MULTI_FILE 流式 |
+| `reasoningStreamingChatModelPrototype` | `langchain4j.open-ai.reasoning-streaming-chat-model` | VUE_PROJECT 工具调用 |
+| `routingChatModel` | `langchain4j.open-ai.routing-chat-model` | 代码类型智能路由 |
 
-### 9.2 模型配置
+所有模型配置支持环境变量覆盖，详见 [11. 配置说明](#11-配置说明)。
 
-| Bean | 配置来源 | 用途 | 模型 |
-|------|----------|------|------|
-| `ChatModel` | langchain4j starter 自动配置 | 同步调用 | application-local.yaml |
-| `openAiStreamingChatModel` | starter 自动配置 | HTML/MULTI_FILE 流式 | application-local.yaml |
-| `reasoningStreamingChatModel` | `ReasoningStreamingChatModelConfig` | VUE_PROJECT | deepseek-v4-flash, maxTokens=16384 |
+### 10.2 AI 服务
 
-配置前缀：`langchain4j.open-ai.chat-model`
+| 服务 | Prompt 文件 | 说明 |
+|------|------------|------|
+| `AiCodeGeneratorService` | codegen-*-system-prompt.txt | 代码生成 |
+| `AiCodeGenTypeRoutingService` | codegen-routing-system-prompt.txt | 类型路由 |
+| `AiAppNameService` | app-name-system-prompt.txt | 应用命名 |
+| `CodeQualityCheckService` | code-quality-check-system-prompt.txt | 工作流质检 |
+| `ImageCollectionPlanService` | image-collection-plan-system-prompt.txt | 工作流图片计划 |
 
-### 9.3 AI 服务方法
-
-| 方法 | Prompt 文件 | 返回类型 | 模式 |
-|------|------------|---------|------|
-| `generateHtmlCode` | codegen-html-system-prompt.txt | `HtmlCodeResult` | 同步 |
-| `generateMultiFileCode` | codegen-multi-file-system-prompt.txt | `MultiFileCodeResult` | 同步 |
-| `generateHtmlCodeStream` | 同上 | `Flux<String>` | 流式 |
-| `generateMultiFileCodeStream` | 同上 | `Flux<String>` | 流式 |
-| `generateVueProjectCodeStream` | codegen-vue-project-system-prompt.txt | `TokenStream` | 流式 + 工具 |
-
-### 9.4 VUE_PROJECT 流式消息格式
-
-AI 层输出的 JSON 消息类型：
+### 10.3 VUE_PROJECT 流式消息格式
 
 ```json
-// AI 文本片段
-{ "type": "ai_response", "data": "正在生成..." }
-
-// 工具调用请求
-{ "type": "tool_request", "id": "call_xxx", "name": "writeFile", "arguments": "..." }
-
-// 工具执行结果
-{ "type": "tool_executed", "id": "call_xxx", "name": "writeFile", "arguments": "{...}", "result": "..." }
+{ "type": "ai_response", "data": "..." }
+{ "type": "tool_request", "id": "...", "name": "writeFile", "arguments": "..." }
+{ "type": "tool_executed", "id": "...", "name": "writeFile", "result": "..." }
 ```
 
-经 `JsonMessageStreamHandler` 转换后，前端收到的是格式化纯文本。
+经 `JsonMessageStreamHandler` 转换后，前端 SSE 收到格式化纯文本。
 
 ---
 
-## 10. 配置说明
+## 11. 配置说明
 
-### 10.1 application.yaml
+### 11.1 环境变量
+
+复制 `env.example` 为 `.env` 并填写：
+
+```bash
+set -a && source .env && set +a && ./mvnw spring-boot:run
+```
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `REDIS_HOST/PORT/PASSWORD/DATABASE` | Redis 连接 | localhost:6379 |
+| `SERVER_PORT` | 服务端口 | 8123 |
+| `LLM_BASE_URL` | LLM API 地址 | https://api.deepseek.com |
+| `LLM_API_KEY` | LLM API Key | — |
+| `LLM_CHAT_MODEL_NAME` | 同步模型 | deepseek-v4-flash |
+| `LLM_STREAMING_MODEL_NAME` | 流式模型 | deepseek-v4-pro |
+| `LLM_REASONING_MODEL_NAME` | 推理模型 | deepseek-v4-pro |
+| `LLM_ROUTING_MODEL_NAME` | 路由模型 | deepseek-v4-flash |
+| `COS_*` | 腾讯云 COS | — |
+| `PEXELS_API_KEY` | Pexels 图片搜索 | — |
+| `DASHSCOPE_API_KEY` | 阿里云图片生成 | — |
+
+### 11.2 application.yaml 关键项
 
 ```yaml
 spring:
-  application.name: ai-code-mother-backend
-  session:
-    store-type: redis
-    timeout: 2592000          # Session 30 天
-  datasource:
-    url: jdbc:mysql://localhost:3306/ai_code_mother
-    username: root
-    password: <your-password>
-  data.redis:
-    host: localhost
-    port: 6379
-    ttl: 3600                 # ChatMemory TTL
-  profiles.active: local
+  session.store-type: redis
+  session.timeout: 2592000          # 30 天
+  datasource.url: jdbc:mysql://localhost:3306/ai_code_mother
+  data.redis.ttl: 3600              # ChatMemory TTL
 
 server:
-  port: 8123
-  servlet:
-    context-path: /api
-    session.cookie.max-age: 2592000
+  port: ${SERVER_PORT:8123}
+  servlet.context-path: /api
 ```
 
-### 10.2 application-local.yaml（需自行创建，已 gitignore）
+> 数据库密码当前写在 `application.yaml` 中，生产环境建议改为环境变量。
 
-```yaml
-langchain4j:
-  open-ai:
-    chat-model:
-      base-url: https://api.deepseek.com/v1    # OpenAI 兼容端点
-      api-key: sk-xxxxxxxxxxxxxxxx
-      model-name: deepseek-chat
-      # streaming-chat-model 使用相同前缀配置
-```
+### 11.3 前端环境变量
 
-### 10.3 硬编码常量
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `VITE_API_BASE_URL` | 后端 API 地址 | http://localhost:8123/api |
+| `VITE_DEPLOY_DOMAIN` | 部署域名 | http://localhost |
+
+### 11.4 硬编码常量
 
 | 常量 | 值 | 说明 |
 |------|-----|------|
-| `CODE_OUTPUT_ROOT_DIR` | `{user.dir}/tmp/code_output` | AI 生成代码目录 |
+| `CODE_OUTPUT_ROOT_DIR` | `{user.dir}/tmp/code_output` | 代码生成目录 |
 | `CODE_DEPLOY_ROOT_DIR` | `{user.dir}/tmp/code_deploy` | 部署目录 |
 | `CODE_DEPLOY_HOST` | `http://localhost:8080` | 部署访问域名 |
-| `GOOD_APP_PRIORITY` | 99 | 精选应用优先级 |
-| `DEFAULT_APP_PRIORITY` | 1 | 默认优先级 |
+| `GOOD_APP_PRIORITY` | 99 | 精选应用 |
+| `DEFAULT_APP_PRIORITY` | 1（代码常量，DB 默认 0） | 默认优先级 |
 
 ---
 
-## 11. 部署与运行
+## 12. 部署与运行
 
-### 11.1 环境要求
+### 12.1 环境要求
 
 | 依赖 | 版本 | 说明 |
 |------|------|------|
 | JDK | 21 | 必须 |
-| MySQL | 8+ | 创建库 `ai_code_mother` |
-| Redis | 6+ | 本地 6379 |
-| Node.js + npm | 18+ | Vue 项目构建需要 |
-| Maven | 3.8+ | 或使用项目自带 mvnw |
+| MySQL | 8+ | 库名 `ai_code_mother` |
+| Redis | 6+ | Session + ChatMemory + 限流 + 缓存 |
+| Node.js + npm | 18+ | Vue 项目构建 |
+| Chrome | — | Selenium 截图（WebDriverManager 自动管理） |
+| Maven | 3.8+ | 或 `./mvnw` |
 
-### 11.2 初始化
+### 12.2 初始化
 
 ```bash
-# 1. 创建数据库
 mysql -u root -p < sql/create_table.sql
-
-# 2. 创建本地配置
-cat > src/main/resources/application-local.yaml << 'EOF'
-langchain4j:
-  open-ai:
-    chat-model:
-      base-url: https://api.deepseek.com/v1
-      api-key: YOUR_API_KEY
-      model-name: deepseek-chat
-EOF
-
-# 3. 修改 application.yaml 中的数据库密码
+cp env.example .env   # 填写 LLM_API_KEY 等
 ```
 
-### 11.3 启动
+### 12.3 启动
 
 ```bash
-# 开发模式
-./mvnw spring-boot:run
+# 后端
+set -a && source .env && set +a && ./mvnw spring-boot:run
 
-# 打包运行
-./mvnw package -DskipTests
-java -jar target/ai-code-mother-0.0.1-SNAPSHOT.jar
+# 前端
+cd ai-code-mother-frontend && npm install && npm run dev
 ```
 
-### 11.4 访问地址
+### 12.4 访问地址
 
 | 服务 | 地址 |
 |------|------|
 | 后端 API | http://localhost:8123/api |
-| 健康检查 | http://localhost:8123/api/health/ |
 | API 文档 | http://localhost:8123/api/doc.html |
-| 静态预览 | http://localhost:8123/api/static/{deployKey}/ |
-
----
-
-## 12. 使用指南
-
-### 12.1 快速体验（curl）
-
-```bash
-# 1. 注册
-curl -X POST http://localhost:8123/api/user/register \
-  -H "Content-Type: application/json" \
-  -d '{"userAccount":"demo","userPassword":"12345678","checkPassword":"12345678"}' \
-  -c cookies.txt
-
-# 2. 登录
-curl -X POST http://localhost:8123/api/user/login \
-  -H "Content-Type: application/json" \
-  -d '{"userAccount":"demo","userPassword":"12345678"}' \
-  -c cookies.txt
-
-# 3. 创建应用
-curl -X POST http://localhost:8123/api/app/add \
-  -H "Content-Type: application/json" \
-  -b cookies.txt \
-  -d '{"initPrompt":"帮我做一个计数器页面"}'
-
-# 4. 流式生成代码（替换 APP_ID）
-curl -N "http://localhost:8123/api/app/chat/gen/code?appId=APP_ID&message=开始生成" \
-  -b cookies.txt
-
-# 5. 部署
-curl -X POST http://localhost:8123/api/app/deploy \
-  -H "Content-Type: application/json" \
-  -b cookies.txt \
-  -d '{"appId": APP_ID}'
-
-# 6. 查看对话历史
-curl "http://localhost:8123/api/chatHistory/app/APP_ID?pageSize=10" \
-  -b cookies.txt
-```
-
-### 12.2 前端集成要点
-
-1. **Session 认证**：所有需登录接口携带 Cookie（`withCredentials: true`）
-2. **SSE 流式**：使用 `EventSource` 或 `fetch` + `ReadableStream` 接收代码生成流
-3. **SSE 结束判断**：监听 `event: done` 事件
-4. **游标分页**：对话历史使用 `lastCreateTime` 游标，非传统页码分页
-5. **CORS**：后端已全局放行，前端可直接跨域调用
-
-### 12.3 管理员操作
-
-```bash
-# 创建管理员账号（直接在数据库修改 userRole）
-UPDATE user SET userRole = 'admin' WHERE userAccount = 'demo';
-
-# 设置精选应用
-curl -X POST http://localhost:8123/api/app/admin/update \
-  -H "Content-Type: application/json" \
-  -b cookies.txt \
-  -d '{"id": APP_ID, "priority": 99}'
-```
+| 前端（dev） | http://localhost:5173（Vite 默认） |
+| 静态预览 | http://localhost:8123/api/static/{codeGenType}_{appId}/ |
 
 ---
 
@@ -1040,30 +725,36 @@ curl -X POST http://localhost:8123/api/app/admin/update \
 
 ### 13.1 静态资源路径不一致
 
-- **部署**：复制到 `tmp/code_deploy/{deployKey}/`，返回 URL 为 `http://localhost:8080/{deployKey}/`
-- **StaticResourceController**：从 `tmp/code_output/{deployKey}/` 读取
-- **代码生成**：实际存储在 `tmp/code_output/{codeGenType}_{appId}/`
+| 场景 | 路径规则 |
+|------|----------|
+| 代码生成 | `tmp/code_output/{codeGenType}_{appId}/` |
+| 前端开发预览 | `/api/static/{codeGenType}_{appId}/` |
+| 部署 | 复制到 `tmp/code_deploy/{deployKey}/` |
+| StaticResourceController | 读取 `tmp/code_output/{deployKey}/` |
+| 部署 URL | `http://localhost:8080/{deployKey}/`（需外部静态服务） |
 
-三者路径不一致，静态预览接口 `/api/static/{deployKey}/` 可能无法正确访问已生成的代码。部署 URL 依赖外部 8080 端口的静态服务。
+`StaticResourceController` 使用 `deployKey` 作为目录名，与代码实际存储路径 `{codeGenType}_{appId}` 不一致。前端 `getStaticPreviewUrl` 已适配 `{codeGenType}_{appId}` 模式。
 
-### 13.2 VUE_PROJECT 每轮清空记忆
+### 13.2 Vue 构建阻塞 SSE
 
-每次对话前会 `resetVueProjectSession(appId)`，清空 Redis 中的 AI 记忆并重建服务实例。多轮对话的上下文依赖 `chat_history` 表中加载的用户消息，而非 Redis 记忆。
+VUE_PROJECT 模式下 `npm install` + `npm run build` 在 SSE 完成前**同步执行**，大型项目可能导致 SSE 长时间不结束。
 
-### 13.3 推理模型硬编码
+### 13.3 工作流未接入主业务
 
-`ReasoningStreamingChatModelConfig` 中模型名 `deepseek-v4-flash` 和 `maxTokens=16384` 为硬编码，切换模型需修改源码。
+LangGraph4j 工作流通过 `/api/workflow/*` 独立暴露，`CodeGeneratorNode` 使用固定 `appId=0`，与 `AppController` 主流程尚未整合。
 
-### 13.4 Vue 构建依赖
+### 13.4 外部依赖
 
-VUE_PROJECT 模式生成完成后异步执行 `npm install` + `npm run build`，需确保服务器已安装 Node.js 和 npm，且网络可访问 npm registry。
+- COS 未配置时，部署封面截图上传失败
+- Pexels / DashScope 未配置时，工作流图片收集节点不可用
+- VUE_PROJECT 构建需服务器安装 Node.js 且网络可访问 npm registry
 
 ### 13.5 安全建议
 
-- `application.yaml` 中包含数据库密码，生产环境应使用环境变量或配置中心
-- `application-local.yaml` 含 API Key，已在 `.gitignore` 中排除
-- 部分 UserController 接口（`/user/list`, `/user/remove/{id}` 等）无权限注解，生产环境应清理
+- 敏感配置（DB 密码、API Key）使用环境变量，勿提交到 Git
+- `UserController` 部分接口（`/user/list`, `/user/remove/{id}` 等）无权限注解，生产环境应清理或加鉴权
+- AI 对话接口已加用户级限流，可根据业务调整 `@RateLimit` 参数
 
 ---
 
-*文档由代码分析自动生成，如有变更请同步更新。*
+*文档基于代码分析维护，代码变更时请同步更新。*
