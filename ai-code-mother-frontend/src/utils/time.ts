@@ -31,3 +31,20 @@ export function formatDateTimeMultiline(value?: string) {
   const second = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day}\n${hour}:${minute}:${second}`
 }
+
+export function getGreetingByTime(date = new Date()) {
+  const hour = date.getHours()
+  if (hour >= 5 && hour < 9) {
+    return '早上好～'
+  }
+  if (hour >= 9 && hour < 12) {
+    return '上午好～'
+  }
+  if (hour >= 12 && hour < 14) {
+    return '中午好～'
+  }
+  if (hour >= 14 && hour < 18) {
+    return '下午好～'
+  }
+  return '晚上好～'
+}

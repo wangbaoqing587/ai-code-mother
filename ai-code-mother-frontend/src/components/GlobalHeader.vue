@@ -9,6 +9,7 @@ import { menus } from '@/config/menus'
 import { userLogout } from '@/api/userController'
 import { iconLogo } from '@/assets'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { getGreetingByTime } from '@/utils/time'
 import { useLoginUserStore } from '@/stores/loginUser'
 
 const route = useRoute()
@@ -38,6 +39,7 @@ const isMintUserPage = computed(() => isUserInfoPage.value || isAuthPage.value)
 const isMintHeader = computed(
   () => isHomePage.value || isChatPage.value || isMintUserPage.value || (isAppEditPage.value && !isAdminUser.value),
 )
+const greetingText = computed(() => getGreetingByTime())
 
 const onMenuClick: MenuProps['onClick'] = ({ key }) => {
   router.push(String(key))
@@ -88,7 +90,8 @@ const onUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
       >
         <div class="user-info">
           <UserAvatar :src="loginUserStore.loginUser.userAvatar" />
-          <span>{{ loginUserStore.loginUser.userName }}</span>
+          <span class="user-name">{{ loginUserStore.loginUser.userName }}</span>
+          <span class="greeting">{{ greetingText }}</span>
         </div>
         <template #overlay>
           <a-menu class="user-dropdown-menu" @click="onUserMenuClick">
@@ -311,6 +314,16 @@ const onUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
   cursor: pointer;
 }
 
+.greeting {
+  font-size: 14px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.user-name {
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .global-header {
     padding: 0 12px;
@@ -318,6 +331,10 @@ const onUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
   }
 
   .title {
+    display: none;
+  }
+
+  .greeting {
     display: none;
   }
 }
