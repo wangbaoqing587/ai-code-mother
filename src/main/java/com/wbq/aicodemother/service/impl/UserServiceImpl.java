@@ -216,4 +216,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
     }
 
+    @Override
+    public boolean changePassword(User loginUser, String userPassword, String newPassword, String checkPassword) {
+        if (StrUtil.hasBlank(userPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (newPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
+        }
+        if (userPassword.equals(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码不能与旧密码相同");
+        }
+        String encryptPassword = getEncryptPassword(userPassword);
+        if (!encryptPassword.equals(loginUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码错误");
+        }
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserPassword(getEncryptPassword(newPassword));
+        boolean result = this.updateById(updateUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR);
+        }
+        return true;
+    }
+
 }

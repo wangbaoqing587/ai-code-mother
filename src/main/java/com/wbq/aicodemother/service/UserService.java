@@ -85,4 +85,6 @@ public interface UserService extends IService<User> {
     QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
 
     String getEncryptPassword(String userPassword);
+
+    boolean changePassword(User loginUser, String userPassword, String newPassword, String checkPassword);
 }

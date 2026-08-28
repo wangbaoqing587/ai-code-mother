@@ -84,6 +84,19 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @PostMapping("/change/password")
+    public BaseResponse<Boolean> changePassword(@RequestBody UserChangePasswordRequest userChangePasswordRequest,
+                                                HttpServletRequest request) {
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.changePassword(
+                loginUser,
+                userChangePasswordRequest.getUserPassword(),
+                userChangePasswordRequest.getNewPassword(),
+                userChangePasswordRequest.getCheckPassword());
+        return ResultUtils.success(result);
+    }
+
     /**
      * 创建用户
      */

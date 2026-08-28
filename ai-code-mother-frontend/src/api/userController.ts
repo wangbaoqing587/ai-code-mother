@@ -199,3 +199,17 @@ export async function updateUser(body: API.UserUpdateRequest, options?: { [key: 
     ...(options || {}),
   })
 }
+
+export async function changePassword(
+  body: API.UserChangePasswordRequest,
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseBoolean>('/user/change/password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

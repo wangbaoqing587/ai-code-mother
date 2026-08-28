@@ -37,6 +37,75 @@
   padding: 18px 24px 22px;
 }
 
+.mint-modal-wrap:has(.ant-modal-footer) .ant-modal-body {
+  padding-bottom: 8px;
+}
+
+.mint-modal-wrap .ant-modal-footer {
+  padding: 12px 24px 20px;
+  border-top: 1px solid rgba(136, 216, 176, 0.2);
+  background: #fff;
+}
+
+.mint-modal-wrap .ant-modal-footer .ant-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mint-modal-wrap .ant-modal-footer .ant-btn-default {
+  border: 1.5px solid rgba(136, 216, 176, 0.55);
+  color: #334155;
+  background: #fff;
+}
+
+.mint-modal-wrap .ant-modal-footer .ant-btn-default:hover {
+  border-color: rgba(91, 196, 160, 0.75) !important;
+  color: #2d9a78 !important;
+  background: #f0fdf7 !important;
+}
+
+.mint-modal-wrap .ant-modal-footer .ant-btn-primary {
+  background: #5bc4a0;
+  border-color: #5bc4a0;
+  box-shadow: 0 4px 12px rgba(91, 196, 160, 0.28);
+}
+
+.mint-modal-wrap .ant-modal-footer .ant-btn-primary:hover {
+  background: #4db892 !important;
+  border-color: #4db892 !important;
+}
+
+.mint-modal-wrap .ant-form-item-label > label {
+  color: #475569;
+  font-weight: 500;
+}
+
+.mint-modal-wrap .ant-input,
+.mint-modal-wrap .ant-input-affix-wrapper,
+.mint-modal-wrap .ant-select-selector {
+  border-radius: 10px !important;
+  border-color: rgba(136, 216, 176, 0.45) !important;
+}
+
+.mint-modal-wrap .ant-input-affix-wrapper .ant-input {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.password-modal-wrap .ant-input-affix-wrapper .ant-input {
+  border-radius: 0 !important;
+}
+
+.mint-modal-wrap .ant-input:focus,
+.mint-modal-wrap .ant-input-affix-wrapper-focused,
+.mint-modal-wrap .ant-select-focused .ant-select-selector {
+  border-color: rgba(91, 196, 160, 0.75) !important;
+  box-shadow: none !important;
+}
+
 .mint-confirm-wrap .ant-modal-body {
   padding: 22px 24px 20px;
 }
