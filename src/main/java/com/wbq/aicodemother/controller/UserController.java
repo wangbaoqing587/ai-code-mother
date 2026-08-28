@@ -137,16 +137,27 @@ public class UserController {
     }
 
     /**
-     * 更新用户
+     * 更新用户（管理员可更新任意用户；普通用户仅可更新自己的昵称、头像、简介）
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
+                                            HttpServletRequest request) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        User loginUser = userService.getLoginUser(request);
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        if (!isAdmin && !loginUser.getId().equals(userUpdateRequest.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
         User user = new User();
-        BeanUtil.copyProperties(userUpdateRequest, user);
+        user.setId(userUpdateRequest.getId());
+        user.setUserName(userUpdateRequest.getUserName());
+        user.setUserAvatar(userUpdateRequest.getUserAvatar());
+        user.setUserProfile(userUpdateRequest.getUserProfile());
+        if (isAdmin) {
+            user.setUserRole(userUpdateRequest.getUserRole());
+        }
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);

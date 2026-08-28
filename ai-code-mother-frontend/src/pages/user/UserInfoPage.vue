@@ -100,7 +100,6 @@ async function handleSave() {
       userName: formState.userName,
       userAvatar: formState.userAvatar,
       userProfile: formState.userProfile,
-      userRole: loginUserStore.loginUser.userRole,
     })
     if (res.data.code === 0) {
       message.success('保存成功')
