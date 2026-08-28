@@ -198,6 +198,7 @@ onMounted(() => {
       :loading="isGoodLoading"
       :page-num="goodPage.pageNum"
       :page-size="goodPage.pageSize"
+      restrict-chat-to-owner
       @page-change="handleGoodPageChange"
     />
   </div>

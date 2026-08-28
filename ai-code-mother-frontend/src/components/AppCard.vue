@@ -5,13 +5,18 @@ import { icProductCoverDefault } from '@/assets'
 import UserAvatar from '@/components/UserAvatar.vue'
 import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import { getDeployUrl } from '@/config/env'
+import { useLoginUserStore } from '@/stores/loginUser'
 
 interface Props {
   app: API.AppVO
+  restrictChatToOwner?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  restrictChatToOwner: false,
+})
 const router = useRouter()
+const loginUserStore = useLoginUserStore()
 
 const coverUrl = computed(() => props.app.cover || icProductCoverDefault)
 const authorName = computed(() => props.app.user?.userName || '未知用户')
@@ -20,6 +25,16 @@ const hasDeployKey = computed(() => !!props.app.deployKey)
 const deployUrl = computed(() =>
   props.app.deployKey ? getDeployUrl(props.app.deployKey, props.app.codeGenType) : '',
 )
+const showViewChat = computed(() => {
+  if (!props.restrictChatToOwner) {
+    return true
+  }
+  const loginUserId = loginUserStore.loginUser.id
+  if (!loginUserId || !props.app.userId) {
+    return false
+  }
+  return String(loginUserId) === String(props.app.userId)
+})
 
 function handleViewChat() {
   if (!props.app.id) {
@@ -41,7 +56,14 @@ function handleViewWork() {
     <div class="app-card-cover">
       <img :src="coverUrl" :alt="app.appName || '应用封面'" />
       <div class="app-card-actions">
-        <button class="action-btn primary" type="button" @click="handleViewChat">查看对话</button>
+        <button
+          v-if="showViewChat"
+          class="action-btn primary"
+          type="button"
+          @click="handleViewChat"
+        >
+          查看对话
+        </button>
         <button
           v-if="hasDeployKey"
           class="action-btn"
@@ -117,7 +139,7 @@ function handleViewWork() {
 .action-btn {
   height: 36px;
   padding: 0 16px;
-  border: none;
+  border: 1px solid rgba(45, 154, 120, 0.65);
   border-radius: 999px;
   background: #fff;
   color: rgba(0, 0, 0, 0.88);
@@ -130,6 +152,7 @@ function handleViewWork() {
 
 .action-btn.primary {
   background: #5bc4a0;
+  border-color: #8ed9bf;
   color: #fff;
   box-shadow: 0 4px 12px rgba(91, 196, 160, 0.35);
 }

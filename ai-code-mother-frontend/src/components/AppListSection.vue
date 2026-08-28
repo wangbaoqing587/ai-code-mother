@@ -8,10 +8,12 @@ interface Props {
   loading?: boolean
   pageNum: number
   pageSize: number
+  restrictChatToOwner?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   loading: false,
+  restrictChatToOwner: false,
 })
 
 const emit = defineEmits<{
@@ -24,7 +26,12 @@ const emit = defineEmits<{
     <h2 class="section-title">{{ title }}</h2>
     <a-spin :spinning="loading">
       <div class="app-grid">
-        <AppCard v-for="app in apps" :key="app.id" :app="app" />
+        <AppCard
+          v-for="app in apps"
+          :key="app.id"
+          :app="app"
+          :restrict-chat-to-owner="restrictChatToOwner"
+        />
       </div>
       <div v-if="total > pageSize" class="pagination-wrap">
         <a-pagination
