@@ -14,21 +14,75 @@ spring:
   # redis
   data:
     redis:
-      host: localhost
-      port: 6379
-      password:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
       ttl: 3600
-      database: 0
-  profiles:
-    active: local
+      database: ${REDIS_DATABASE:0}
 
 server:
-  port: 8123
+  port: ${SERVER_PORT:8123}
   servlet:
     context-path: /api
     session:
       cookie:
         max-age: 2592000
+
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${LLM_API_KEY:}
+      model-name: ${LLM_CHAT_MODEL_NAME:deepseek-v4-flash}
+      strict-json-schema: true
+      response-format: json
+      max-tokens: 8192
+      max-retries: 3
+      log-requests: true
+      log-responses: true
+    streaming-chat-model:
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${LLM_API_KEY:}
+      model-name: ${LLM_STREAMING_MODEL_NAME:deepseek-v4-pro}
+      max-tokens: 16384
+      timeout: 180s
+      log-requests: true
+      log-responses: true
+    # 推理 AI 模型配置（用于复杂的推理任务）
+    reasoning-streaming-chat-model:
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${LLM_API_KEY:}
+      model-name: ${LLM_REASONING_MODEL_NAME:deepseek-v4-pro}
+      max-tokens: 32768
+      temperature: 0.1
+      log-requests: true
+      log-responses: true
+    # 智能路由 AI 模型配置（用于简单的分类任务）
+    routing-chat-model:
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${LLM_API_KEY:}
+      model-name: ${LLM_ROUTING_MODEL_NAME:deepseek-v4-flash}
+      log-requests: true
+      log-responses: true
+
+# COS 对象存储配置
+cos:
+  client:
+    host: ${COS_HOST:}
+    secretId: ${COS_SECRET_ID:}
+    secretKey: ${COS_SECRET_KEY:}
+    region: ${COS_REGION:ap-beijing}
+    bucket: ${COS_BUCKET:}
+
+# Pexels 图片搜索配置
+pexels:
+  api-key: ${PEXELS_API_KEY:}
+
+# 阿里云 DashScope 配置
+dashscope:
+  api-key: ${DASHSCOPE_API_KEY:}
+  image-model: ${DASHSCOPE_IMAGE_MODEL:wan2.5-t2i-preview}
 
 # springdoc-openapi
 springdoc:

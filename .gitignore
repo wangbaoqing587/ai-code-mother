@@ -1,5 +1,5 @@
 ### CUSTOM ###
-application-local.yaml
+.env
 tmp
 
 HELP.md
