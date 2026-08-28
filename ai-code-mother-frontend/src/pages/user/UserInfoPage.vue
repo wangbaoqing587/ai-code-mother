@@ -147,8 +147,12 @@ onMounted(async () => {
           </a-upload>
         </div>
       </a-form-item>
-      <a-form-item label="用户名">
-        <a-input v-model:value="formState.userName" placeholder="请输入用户名" />
+      <a-form-item
+        label="昵称"
+        name="userName"
+        :rules="[{ max: 12, message: '昵称不能超过 12 个字符' }]"
+      >
+        <a-input v-model:value="formState.userName" placeholder="请输入昵称" :maxlength="12" />
       </a-form-item>
       <a-form-item label="账号">
         <a-input :value="loginUserStore.loginUser.userAccount" disabled />
@@ -174,7 +178,7 @@ onMounted(async () => {
       <a-descriptions-item label="头像">
         <UserAvatar :size="64" :src="loginUserStore.loginUser.userAvatar" />
       </a-descriptions-item>
-      <a-descriptions-item label="用户名">
+      <a-descriptions-item label="昵称">
         {{ loginUserStore.loginUser.userName || '-' }}
       </a-descriptions-item>
       <a-descriptions-item label="账号">

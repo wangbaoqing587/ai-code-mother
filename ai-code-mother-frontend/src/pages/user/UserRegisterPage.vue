@@ -9,6 +9,7 @@ const router = useRouter()
 const isSubmitting = ref(false)
 
 const formState = reactive<API.UserRegisterRequest>({
+  userName: '',
   userAccount: '',
   userPassword: '',
   checkPassword: '',
@@ -38,11 +39,30 @@ async function handleSubmit() {
   <AuthPageLayout title="用户注册">
     <a-form :model="formState" layout="vertical" @finish="handleSubmit">
       <a-form-item
+        name="userName"
+        label="昵称"
+        :rules="[
+          { required: true, message: '请输入昵称' },
+          { max: 12, message: '昵称不能超过 12 个字符' },
+        ]"
+      >
+        <a-input
+          v-model:value="formState.userName"
+          placeholder="请输入昵称"
+          :maxlength="12"
+          autocomplete="nickname"
+        />
+      </a-form-item>
+      <a-form-item
         name="userAccount"
         label="账号"
         :rules="[{ required: true, message: '请输入账号' }]"
       >
-        <a-input v-model:value="formState.userAccount" placeholder="请输入账号" />
+        <a-input
+          v-model:value="formState.userAccount"
+          placeholder="请输入账号"
+          autocomplete="username"
+        />
       </a-form-item>
       <a-form-item
         name="userPassword"
@@ -52,7 +72,11 @@ async function handleSubmit() {
           { min: 8, message: '密码长度不能小于 8 位' },
         ]"
       >
-        <a-input-password v-model:value="formState.userPassword" placeholder="请输入密码" />
+        <a-input-password
+          v-model:value="formState.userPassword"
+          placeholder="请输入密码"
+          autocomplete="new-password"
+        />
       </a-form-item>
       <a-form-item
         name="checkPassword"
@@ -62,7 +86,11 @@ async function handleSubmit() {
           { min: 8, message: '密码长度不能小于 8 位' },
         ]"
       >
-        <a-input-password v-model:value="formState.checkPassword" placeholder="请再次输入密码" />
+        <a-input-password
+          v-model:value="formState.checkPassword"
+          placeholder="请再次输入密码"
+          autocomplete="new-password"
+        />
       </a-form-item>
       <a-form-item>
         <a-button type="primary" html-type="submit" block :loading="isSubmitting">注册</a-button>

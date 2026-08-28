@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wbq.aicodemother.cache.CacheEvictor;
+import com.wbq.aicodemother.constant.UserConstant;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.model.dto.user.UserQueryRequest;
@@ -57,7 +58,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     }
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(String userAccount, String userName, String userPassword, String checkPassword) {
         // 1. 校验
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -70,6 +71,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         }
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
+        }
+        String trimmedUserName = StrUtil.trim(userName);
+        if (StrUtil.isNotBlank(trimmedUserName)) {
+            if (trimmedUserName.length() > UserConstant.MAX_USER_NAME_LENGTH) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过长");
+            }
+        } else {
+            trimmedUserName = "无名";
         }
         // 2. 检查是否重复
         QueryWrapper queryWrapper = new QueryWrapper();
@@ -84,7 +93,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
-        user.setUserName("无名");
+        user.setUserName(trimmedUserName);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean saveResult = this.save(user);
         if (!saveResult) {

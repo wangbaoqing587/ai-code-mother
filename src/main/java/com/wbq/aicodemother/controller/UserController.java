@@ -49,9 +49,10 @@ public class UserController {
     public BaseResponse<Long> register(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
+        String userName = userRegisterRequest.getUserName();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        long result = userService.userRegister(userAccount, userName, userPassword, checkPassword);
         return ResultUtils.success(result);
     }
 
@@ -149,6 +150,10 @@ public class UserController {
         boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
         if (!isAdmin && !loginUser.getId().equals(userUpdateRequest.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        String userName = userUpdateRequest.getUserName();
+        if (userName != null && userName.trim().length() > UserConstant.MAX_USER_NAME_LENGTH) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过长");
         }
         User user = new User();
         user.setId(userUpdateRequest.getId());

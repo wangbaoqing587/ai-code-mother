@@ -33,7 +33,7 @@ const formState = reactive<API.UserUpdateRequest>({
 const columns: TableColumnsType = [
   { title: 'id', dataIndex: 'id', width: '6%', align: 'center' },
   { title: '账号', dataIndex: 'userAccount', width: '12%', ellipsis: true },
-  { title: '用户名', dataIndex: 'userName', width: '10%', ellipsis: true },
+  { title: '昵称', dataIndex: 'userName', width: '10%', ellipsis: true },
   { title: '头像', dataIndex: 'userAvatar', key: 'userAvatar', width: '6%', align: 'center' },
   { title: '简介', dataIndex: 'userProfile', key: 'userProfile', width: '18%', ellipsis: true },
   { title: '角色', dataIndex: 'userRole', width: '8%', align: 'center' },
@@ -154,8 +154,8 @@ onMounted(() => {
       <a-form-item label="账号">
         <a-input v-model:value="searchParams.userAccount" placeholder="请输入账号" allow-clear />
       </a-form-item>
-      <a-form-item label="用户名">
-        <a-input v-model:value="searchParams.userName" placeholder="请输入用户名" allow-clear />
+      <a-form-item label="昵称">
+        <a-input v-model:value="searchParams.userName" placeholder="请输入昵称" allow-clear />
       </a-form-item>
       <a-form-item label="角色">
         <a-select
@@ -243,8 +243,12 @@ onMounted(() => {
       @ok="handleSubmit"
     >
       <a-form layout="vertical" :model="formState">
-        <a-form-item label="用户名">
-          <a-input v-model:value="formState.userName" placeholder="请输入用户名" />
+        <a-form-item
+          label="昵称"
+          name="userName"
+          :rules="[{ max: 12, message: '昵称不能超过 12 个字符' }]"
+        >
+          <a-input v-model:value="formState.userName" placeholder="请输入昵称" :maxlength="12" />
         </a-form-item>
         <a-form-item label="头像">
           <a-input v-model:value="formState.userAvatar" placeholder="请输入头像 URL" />
