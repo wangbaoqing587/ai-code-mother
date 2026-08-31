@@ -2,6 +2,7 @@ import { ACCESS_ENUM, type AccessEnum } from '@/access/accessEnum'
 
 export const accessConfig: Record<string, AccessEnum> = {
   home: ACCESS_ENUM.NOT_LOGIN,
+  myWorks: ACCESS_ENUM.USER,
   userLogin: ACCESS_ENUM.NOT_LOGIN,
   userRegister: ACCESS_ENUM.NOT_LOGIN,
   userInfo: ACCESS_ENUM.USER,

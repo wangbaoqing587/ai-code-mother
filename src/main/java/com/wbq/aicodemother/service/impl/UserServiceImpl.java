@@ -43,7 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     public boolean updateById(User entity) {
         boolean result = super.updateById(entity);
         if (result) {
-            cacheEvictor.evictGoodAppPage();
+            cacheEvictor.evictAppListPageCaches();
         }
         return result;
     }
@@ -52,7 +52,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     public boolean removeById(Serializable id) {
         boolean result = super.removeById(id);
         if (result) {
-            cacheEvictor.evictGoodAppPage();
+            cacheEvictor.evictAppListPageCaches();
         }
         return result;
     }

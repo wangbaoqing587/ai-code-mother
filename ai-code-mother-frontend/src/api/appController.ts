@@ -154,6 +154,21 @@ export async function listGoodAppVoByPage(
   })
 }
 
+/** 分页查询应用广场列表（按点赞数排序） POST /app/plaza/list/page/vo */
+export async function listAppPlazaVoByPage(
+  body: API.AppQueryRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponsePageAppVO>('/app/plaza/list/page/vo', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 此处后端没有提供注释 POST /app/my/list/page/vo */
 export async function listMyAppVoByPage(
   body: API.AppQueryRequest,

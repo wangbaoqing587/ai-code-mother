@@ -4,4 +4,33 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.wbq.aicodemother.mapper.AppMapper">
 
+    <select id="countAllApps" resultType="long">
+        SELECT COUNT(*)
+        FROM app
+        WHERE isDelete = 0
+    </select>
+
+    <select id="selectAppPlazaPage" resultType="com.wbq.aicodemother.model.entity.App">
+        SELECT a.id,
+               a.appName,
+               a.cover,
+               a.initPrompt,
+               a.codeGenType,
+               a.genStatus,
+               a.deployKey,
+               a.deployedTime,
+               a.priority,
+               a.userId,
+               a.editTime,
+               a.createTime,
+               a.updateTime,
+               a.isDelete
+        FROM app a
+                 LEFT JOIN app_like al ON a.id = al.appId
+        WHERE a.isDelete = 0
+        GROUP BY a.id
+        ORDER BY COUNT(al.id) DESC, a.id DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
 </mapper>

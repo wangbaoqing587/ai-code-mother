@@ -14,6 +14,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/my/works',
+      name: 'myWorks',
+      component: () => import('@/pages/MyWorksPage.vue'),
+      meta: {
+        access: accessConfig.myWorks,
+      },
+    },
+    {
       path: '/user/login',
       name: 'userLogin',
       component: () => import('@/pages/user/UserLoginPage.vue'),

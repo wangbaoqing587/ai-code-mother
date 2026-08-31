@@ -107,4 +107,6 @@ public interface AppService extends IService<App> {
     boolean deleteComment(Long commentId, User loginUser);
 
     Page<AppCommentVO> listAppCommentByPage(Long appId, int pageSize, LocalDateTime lastCreateTime);
+
+    Page<AppVO> listAppPlazaVOByPage(AppQueryRequest appQueryRequest, Long loginUserId);
 }

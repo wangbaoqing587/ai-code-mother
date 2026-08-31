@@ -176,6 +176,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        cacheEvictor.evictAppListPageCaches();
         log.info("应用创建成功，ID: {}, 名称: {}, 类型: {}", app.getId(), appName, selectedCodeGenType.getValue());
         return app.getId();
     }
@@ -214,7 +215,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 删除应用
         boolean result = super.removeById(id);
         if (result) {
-            cacheEvictor.evictGoodAppPage();
+            cacheEvictor.evictAppListPageCaches();
         }
         return result;
     }
@@ -223,7 +224,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     public boolean updateById(App entity) {
         boolean result = super.updateById(entity);
         if (result) {
-            cacheEvictor.evictGoodAppPage();
+            cacheEvictor.evictAppListPageCaches();
         }
         return result;
     }
@@ -425,7 +426,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             appLikeMapper.insert(appLike);
             liked = true;
         }
-        cacheEvictor.evictGoodAppPage();
+        cacheEvictor.evictAppListPageCaches();
         AppLikeToggleVO result = new AppLikeToggleVO();
         result.setLiked(liked);
         result.setLikeCount(countLikesByAppId(appId));
@@ -447,7 +448,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .build();
         int saved = appCommentMapper.insert(appComment);
         ThrowUtils.throwIf(saved <= 0, ErrorCode.OPERATION_ERROR);
-        cacheEvictor.evictGoodAppPage();
+        cacheEvictor.evictAppListPageCaches();
         return appComment.getId();
     }
 
@@ -463,7 +464,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         int removed = appCommentMapper.deleteById(commentId);
         if (removed > 0) {
-            cacheEvictor.evictGoodAppPage();
+            cacheEvictor.evictAppListPageCaches();
         }
         return removed > 0;
     }
@@ -482,6 +483,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         Page<AppCommentVO> resultPage = new Page<>(commentPage.getPageNumber(), commentPage.getPageSize(), commentPage.getTotalRow());
         resultPage.setRecords(getAppCommentVOList(commentPage.getRecords()));
         return resultPage;
+    }
+
+    @Override
+    public Page<AppVO> listAppPlazaVOByPage(AppQueryRequest appQueryRequest, Long loginUserId) {
+        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        long pageNum = appQueryRequest.getPageNum();
+        long pageSize = appQueryRequest.getPageSize();
+        ThrowUtils.throwIf(pageNum <= 0 || pageSize <= 0, ErrorCode.PARAMS_ERROR);
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        long total = mapper.countAllApps();
+        long offset = (pageNum - 1) * pageSize;
+        List<App> appList = mapper.selectAppPlazaPage(offset, pageSize);
+        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, total);
+        appVOPage.setRecords(getAppVOList(appList, loginUserId));
+        return appVOPage;
     }
 
     private long countLikesByAppId(Long appId) {

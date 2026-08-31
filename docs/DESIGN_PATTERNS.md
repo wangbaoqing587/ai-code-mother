@@ -544,7 +544,7 @@ AiCodeGeneratorFacade codeGeneratorFacade = SpringContextUtil.getBean(AiCodeGene
 |------|------|------|
 | 本地缓存 | Caffeine（`AiCodeGeneratorServiceFactory.serviceCache`） | 缓存 AI 服务实例 |
 | 分布式缓存 | Spring `@Cacheable` + Redis（`AppController.listGoodAppVOByPage`） | 精选应用列表 |
-| 主动失效 | `CacheEvictor.evictGoodAppPage()` | 应用增删改时清理缓存 |
+| 主动失效 | `CacheEvictor.evictAppListPageCaches()` | 应用增删改时清理精选/广场缓存 |
 
 ---
 

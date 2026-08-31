@@ -35,6 +35,8 @@ public class RedisCacheManagerConfig {
                 .cacheDefaults(defaultConfig)
                 .withCacheConfiguration(AppConstant.GOOD_APP_PAGE_CACHE,
                         defaultConfig.entryTtl(Duration.ofMinutes(5)))
+                .withCacheConfiguration(AppConstant.PLAZA_APP_PAGE_CACHE,
+                        defaultConfig.entryTtl(Duration.ofMinutes(5)))
                 .build();
     }
 }

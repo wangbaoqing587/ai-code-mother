@@ -10,6 +10,7 @@ export interface MenuConfig {
 
 export const menus: MenuConfig[] = [
   { key: 'home', label: '首页', path: '/', access: accessConfig.home },
+  { key: 'myWorks', label: '我的作品', path: '/my/works', access: accessConfig.myWorks },
   {
     key: 'userManage',
     label: '用户管理',

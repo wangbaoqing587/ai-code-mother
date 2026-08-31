@@ -493,7 +493,8 @@ user (1) ──── (N) app (1) ──── (N) chat_history
 | POST | `/app/update` | 登录（创建者） | 更新应用名 |
 | POST | `/app/delete` | 登录（创建者/admin） | 删除应用 |
 | GET | `/app/get/vo?id=` | 公开 | 应用详情 |
-| POST | `/app/my/list/page/vo` | 登录 | 我的应用（pageSize ≤ 20） |
+| POST | `/app/my/list/page/vo` | 登录 | 我的作品（pageSize ≤ 20） |
+| POST | `/app/plaza/list/page/vo` | 公开 | 应用广场（按点赞数排序，Redis 缓存） |
 | POST | `/app/good/list/page/vo` | 公开 | 精选应用（priority=99，Redis 缓存） |
 | POST | `/app/admin/*` | admin | 管理接口 |
 

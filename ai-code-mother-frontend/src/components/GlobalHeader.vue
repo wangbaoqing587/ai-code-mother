@@ -28,6 +28,7 @@ const menuItems = computed(() =>
 const selectedKeys = computed(() => [route.path])
 const isLogin = computed(() => !!loginUserStore.loginUser.id)
 const isHomePage = computed(() => route.name === 'home')
+const isMyWorksPage = computed(() => route.name === 'myWorks')
 const isChatPage = computed(() => route.name === 'appChat')
 const isAdminPage = computed(() => String(route.path).startsWith('/admin/'))
 const isUserInfoPage = computed(() => route.name === 'userInfo')
@@ -37,7 +38,12 @@ const isAdminUser = computed(() => loginUserStore.loginUser.userRole === ACCESS_
 const isAdminHeader = computed(() => isAdminPage.value || (isAppEditPage.value && isAdminUser.value))
 const isMintUserPage = computed(() => isUserInfoPage.value || isAuthPage.value)
 const isMintHeader = computed(
-  () => isHomePage.value || isChatPage.value || isMintUserPage.value || (isAppEditPage.value && !isAdminUser.value),
+  () =>
+    isHomePage.value ||
+    isMyWorksPage.value ||
+    isChatPage.value ||
+    isMintUserPage.value ||
+    (isAppEditPage.value && !isAdminUser.value),
 )
 const greetingText = computed(() => getGreetingByTime())
 

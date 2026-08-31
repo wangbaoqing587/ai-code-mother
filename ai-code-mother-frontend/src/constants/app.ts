@@ -1,8 +1,10 @@
 export const GOOD_APP_PRIORITY = 99
 
-export const MY_APP_PAGE_SIZE = 6
+export const MY_APP_PAGE_SIZE = 9
 
 export const GOOD_APP_PAGE_SIZE = 6
+
+export const PLAZA_APP_PAGE_SIZE = 6
 
 export interface QuickPromptItem {
   label: string

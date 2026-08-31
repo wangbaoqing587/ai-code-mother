@@ -265,6 +265,24 @@ public class AppController {
         return ResultUtils.success(appVOPage);
     }
 
+    /**
+     * 分页查询应用广场列表（按点赞数排序）
+     */
+    @PostMapping("/plaza/list/page/vo")
+    @Cacheable(
+            value = AppConstant.PLAZA_APP_PAGE_CACHE,
+            key = "T(com.wbq.aicodemother.utils.CacheKeyUtils).generateGoodAppPageKey(#appQueryRequest, @appController.getOptionalLoginUserId(#request))",
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
+    public BaseResponse<Page<AppVO>> listAppPlazaVOByPage(@RequestBody AppQueryRequest appQueryRequest,
+                                                          HttpServletRequest request) {
+        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        long pageSize = appQueryRequest.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        Page<AppVO> appVOPage = appService.listAppPlazaVOByPage(appQueryRequest, getOptionalLoginUserId(request));
+        return ResultUtils.success(appVOPage);
+    }
+
     @PostMapping("/like/toggle")
     public BaseResponse<AppLikeToggleVO> toggleLike(@RequestBody AppLikeToggleRequest request,
                                                     HttpServletRequest httpServletRequest) {

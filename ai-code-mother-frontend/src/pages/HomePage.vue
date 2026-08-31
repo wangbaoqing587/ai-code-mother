@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { addApp, listAppVoByPageByAdmin, listGoodAppVoByPage, listMyAppVoByPage } from '@/api/appController'
+import { addApp, listAppPlazaVoByPage, listGoodAppVoByPage } from '@/api/appController'
 import { iconCoverLogo } from '@/assets'
 import AppListSection from '@/components/AppListSection.vue'
 import PromptInputBox from '@/components/PromptInputBox.vue'
 import TypewriterText from '@/components/TypewriterText.vue'
-import { GOOD_APP_PAGE_SIZE, MY_APP_PAGE_SIZE, QUICK_PROMPTS } from '@/constants/app'
-import { ACCESS_ENUM } from '@/access/accessEnum'
+import { GOOD_APP_PAGE_SIZE, PLAZA_APP_PAGE_SIZE, QUICK_PROMPTS } from '@/constants/app'
 import { useLoginUserStore } from '@/stores/loginUser'
 
 const router = useRouter()
@@ -23,14 +22,13 @@ const prompt = ref('')
 const isCreating = ref(false)
 
 const isLogin = computed(() => !!loginUserStore.loginUser.id)
-const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
 
-const myApps = ref<API.AppVO[]>([])
-const myTotal = ref(0)
-const isMyLoading = ref(false)
-const myPage = reactive({
+const plazaApps = ref<API.AppVO[]>([])
+const plazaTotal = ref(0)
+const isPlazaLoading = ref(false)
+const plazaPage = reactive({
   pageNum: 1,
-  pageSize: MY_APP_PAGE_SIZE,
+  pageSize: PLAZA_APP_PAGE_SIZE,
 })
 
 const goodApps = ref<API.AppVO[]>([])
@@ -41,34 +39,21 @@ const goodPage = reactive({
   pageSize: GOOD_APP_PAGE_SIZE,
 })
 
-async function fetchMyApps() {
-  if (!isLogin.value) {
-    myApps.value = []
-    myTotal.value = 0
-    return
-  }
-  const currentUserId = loginUserStore.loginUser.id
-  isMyLoading.value = true
+async function fetchPlazaApps() {
+  isPlazaLoading.value = true
   try {
-    const query: API.AppQueryRequest = {
-      pageNum: myPage.pageNum,
-      pageSize: myPage.pageSize,
-      userId: currentUserId,
-    }
-    const res = isAdmin.value
-      ? await listAppVoByPageByAdmin(query)
-      : await listMyAppVoByPage(query)
+    const res = await listAppPlazaVoByPage({
+      pageNum: plazaPage.pageNum,
+      pageSize: plazaPage.pageSize,
+    })
     if (res.data.code === 0 && res.data.data) {
-      const records = (res.data.data.records ?? []).filter(
-        (app) => String(app.userId) === String(currentUserId),
-      )
-      myApps.value = records
-      myTotal.value = res.data.data.totalRow ?? records.length
+      plazaApps.value = res.data.data.records ?? []
+      plazaTotal.value = res.data.data.totalRow ?? 0
       return
     }
-    message.error('获取我的作品失败：' + (res.data.message ?? '未知错误'))
+    message.error('获取应用广场失败：' + (res.data.message ?? '未知错误'))
   } finally {
-    isMyLoading.value = false
+    isPlazaLoading.value = false
   }
 }
 
@@ -122,9 +107,9 @@ async function handleCreate() {
   }
 }
 
-function handleMyPageChange(page: number) {
-  myPage.pageNum = page
-  fetchMyApps()
+function handlePlazaPageChange(page: number) {
+  plazaPage.pageNum = page
+  fetchPlazaApps()
 }
 
 function handleGoodPageChange(page: number) {
@@ -132,13 +117,8 @@ function handleGoodPageChange(page: number) {
   fetchGoodApps()
 }
 
-watch(isLogin, () => {
-  myPage.pageNum = 1
-  fetchMyApps()
-})
-
 onMounted(() => {
-  fetchMyApps()
+  fetchPlazaApps()
   fetchGoodApps()
 })
 </script>
@@ -180,14 +160,15 @@ onMounted(() => {
     </section>
 
     <AppListSection
-      v-if="isLogin && myApps.length"
-      title="我的作品"
-      :apps="myApps"
-      :total="myTotal"
-      :loading="isMyLoading"
-      :page-num="myPage.pageNum"
-      :page-size="myPage.pageSize"
-      @page-change="handleMyPageChange"
+      v-if="plazaApps.length"
+      title="应用广场"
+      :apps="plazaApps"
+      :total="plazaTotal"
+      :loading="isPlazaLoading"
+      :page-num="plazaPage.pageNum"
+      :page-size="plazaPage.pageSize"
+      restrict-chat-to-owner
+      @page-change="handlePlazaPageChange"
     />
 
     <AppListSection

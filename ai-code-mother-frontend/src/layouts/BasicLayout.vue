@@ -7,6 +7,7 @@ import GlobalFooter from '@/components/GlobalFooter.vue'
 const route = useRoute()
 
 const isHomePage = computed(() => route.name === 'home')
+const isMyWorksPage = computed(() => route.name === 'myWorks')
 const isChatPage = computed(() => route.name === 'appChat')
 const isAdminPage = computed(() => String(route.path).startsWith('/admin/'))
 const isUserInfoPage = computed(() => route.name === 'userInfo')
@@ -16,6 +17,7 @@ const hideFooter = computed(() => Boolean(route.meta.hideFooter) || isChatPage.v
 const contentClass = computed(() => ({
   'basic-layout-content': true,
   'is-home': isHomePage.value,
+  'is-my-works': isMyWorksPage.value,
   'is-chat': isChatPage.value,
   'is-admin': isAdminPage.value,
   'is-user-info': isUserInfoPage.value || isAuthPage.value || isAppEditPage.value,
@@ -43,7 +45,8 @@ const contentClass = computed(() => ({
   background: #fff;
 }
 
-.basic-layout-content.is-home {
+.basic-layout-content.is-home,
+.basic-layout-content.is-my-works {
   padding: 0;
   background: transparent;
 }
@@ -68,7 +71,8 @@ const contentClass = computed(() => ({
     padding: 16px;
   }
 
-  .basic-layout-content.is-chat {
+  .basic-layout-content.is-chat,
+  .basic-layout-content.is-my-works {
     padding: 0;
   }
 }

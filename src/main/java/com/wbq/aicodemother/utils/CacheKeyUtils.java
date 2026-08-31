@@ -26,7 +26,7 @@ public class CacheKeyUtils {
     }
 
     /**
-     * 精选应用分页缓存 key（区分登录用户，避免 hasLiked 串数据）
+     * 应用列表分页缓存 key（区分登录用户，避免 hasLiked 串数据）
      */
     public static String generateGoodAppPageKey(Object appQueryRequest, Long loginUserId) {
         String userSuffix = loginUserId == null ? "guest" : String.valueOf(loginUserId);
