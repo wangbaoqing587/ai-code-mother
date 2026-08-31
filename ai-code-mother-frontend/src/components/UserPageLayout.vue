@@ -1,13 +1,16 @@
 <script setup lang="ts">
 interface Props {
   title: string
+  fillViewport?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  fillViewport: true,
+})
 </script>
 
 <template>
-  <div class="user-page">
+  <div class="user-page" :class="{ 'user-page--compact': !fillViewport }">
     <div class="user-bg" aria-hidden="true">
       <div class="user-bg-blob user-bg-blob-soft" />
     </div>
@@ -18,6 +21,9 @@ defineProps<Props>()
       <div class="user-panel">
         <slot />
       </div>
+    </div>
+    <div v-if="$slots.extra" class="user-extra">
+      <slot name="extra" />
     </div>
   </div>
 </template>
@@ -30,6 +36,11 @@ defineProps<Props>()
   padding: 28px 24px 56px;
   box-sizing: border-box;
   overflow: hidden;
+}
+
+.user-page--compact {
+  min-height: auto;
+  padding-bottom: 24px;
 }
 
 .user-bg {
@@ -84,6 +95,11 @@ defineProps<Props>()
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.user-extra {
+  position: relative;
+  z-index: 1;
 }
 
 .user-page-header {

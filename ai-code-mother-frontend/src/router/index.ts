@@ -46,6 +46,14 @@ const router = createRouter({
       },
     },
     {
+      path: '/user/profile/:userId',
+      name: 'userProfile',
+      component: () => import('@/pages/user/UserInfoPage.vue'),
+      meta: {
+        access: accessConfig.userProfile,
+      },
+    },
+    {
       path: '/app/chat/:id',
       name: 'appChat',
       component: () => import('@/pages/app/AppChatPage.vue'),

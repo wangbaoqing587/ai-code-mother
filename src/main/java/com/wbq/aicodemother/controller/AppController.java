@@ -222,6 +222,30 @@ public class AppController {
     }
 
     /**
+     * 分页查询指定用户的应用列表（公开）
+     */
+    @PostMapping("/user/list/page/vo")
+    public BaseResponse<Page<AppVO>> listUserAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
+                                                         HttpServletRequest request) {
+        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        Long userId = appQueryRequest.getUserId();
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR, "用户ID无效");
+        long pageNum = appQueryRequest.getPageNum();
+        long pageSize = appQueryRequest.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
+        if (StrUtil.isBlank(appQueryRequest.getSortField())) {
+            appQueryRequest.setSortField("createTime");
+            appQueryRequest.setSortOrder("descend");
+        }
+        QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
+        Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
+        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
+        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords(), getOptionalLoginUserId(request));
+        appVOPage.setRecords(appVOList);
+        return ResultUtils.success(appVOPage);
+    }
+
+    /**
      * 分页查询自己的应用列表
      */
     @PostMapping("/my/list/page/vo")

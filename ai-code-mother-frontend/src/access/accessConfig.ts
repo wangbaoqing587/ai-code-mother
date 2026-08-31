@@ -6,6 +6,7 @@ export const accessConfig: Record<string, AccessEnum> = {
   userLogin: ACCESS_ENUM.NOT_LOGIN,
   userRegister: ACCESS_ENUM.NOT_LOGIN,
   userInfo: ACCESS_ENUM.USER,
+  userProfile: ACCESS_ENUM.NOT_LOGIN,
   userManage: ACCESS_ENUM.ADMIN,
   appManage: ACCESS_ENUM.ADMIN,
   chatManage: ACCESS_ENUM.ADMIN,

@@ -13,10 +13,12 @@ import { useLoginUserStore } from '@/stores/loginUser'
 interface Props {
   app: API.AppVO
   restrictChatToOwner?: boolean
+  variant?: 'default' | 'compact'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   restrictChatToOwner: false,
+  variant: 'default',
 })
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
@@ -54,6 +56,8 @@ const showViewChat = computed(() => {
   return String(loginUserId) === String(props.app.userId)
 })
 
+const avatarSize = computed(() => (props.variant === 'compact' ? 28 : 36))
+
 function handleViewChat() {
   if (!props.app.id) {
     return
@@ -66,6 +70,14 @@ function handleViewWork() {
     return
   }
   window.open(deployUrl.value, '_blank')
+}
+
+function handleViewAuthor(event: Event) {
+  event.stopPropagation()
+  if (!props.app.userId) {
+    return
+  }
+  router.push(`/user/profile/${props.app.userId}`)
 }
 
 async function handleToggleLike(event: Event) {
@@ -107,7 +119,7 @@ function handleCommentAdded() {
 </script>
 
 <template>
-  <div class="app-card">
+  <div class="app-card" :class="{ 'app-card--compact': variant === 'compact' }">
     <div class="app-card-cover">
       <img :src="coverUrl" :alt="app.appName || '应用封面'" />
       <div class="app-card-actions">
@@ -130,7 +142,15 @@ function handleCommentAdded() {
       </div>
     </div>
     <div class="app-card-meta">
-      <UserAvatar :size="36" :src="authorAvatar" />
+      <button
+        v-if="app.userId"
+        type="button"
+        class="author-avatar-btn"
+        @click="handleViewAuthor"
+      >
+        <UserAvatar :size="avatarSize" :src="authorAvatar" />
+      </button>
+      <UserAvatar v-else :size="avatarSize" :src="authorAvatar" />
       <div class="app-card-text">
         <div class="app-card-top">
           <div class="app-card-title">{{ app.appName || '未命名应用' }}</div>
@@ -242,6 +262,20 @@ function handleCommentAdded() {
   padding: 14px 16px 16px;
 }
 
+.author-avatar-btn {
+  display: inline-flex;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.author-avatar-btn:hover {
+  transform: scale(1.05);
+}
+
 .app-card-text {
   flex: 1;
   min-width: 0;
@@ -316,5 +350,70 @@ function handleCommentAdded() {
 .stat-icon {
   font-size: 12px;
   line-height: 1;
+}
+
+.app-card--compact {
+  border-radius: 14px;
+  border-width: 1.5px;
+  box-shadow:
+    0 6px 20px rgba(136, 216, 176, 0.1),
+    0 1px 6px rgba(26, 46, 53, 0.04);
+}
+
+.app-card--compact:hover {
+  box-shadow:
+    0 10px 28px rgba(136, 216, 176, 0.16),
+    0 2px 8px rgba(26, 46, 53, 0.06);
+}
+
+.app-card--compact .app-card-actions {
+  gap: 8px;
+}
+
+.app-card--compact .action-btn {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.app-card--compact .app-card-meta {
+  gap: 8px;
+  padding: 10px 12px 12px;
+}
+
+.app-card--compact .app-card-top {
+  gap: 6px;
+}
+
+.app-card--compact .app-card-title {
+  font-size: 14px;
+}
+
+.app-card--compact .app-card-sub {
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.app-card--compact .app-card-author {
+  font-size: 12px;
+}
+
+.app-card--compact .app-card-stats {
+  gap: 6px;
+  margin-right: 2px;
+}
+
+.app-card--compact .stat-btn {
+  font-size: 11px;
+}
+
+.app-card--compact .stat-icon {
+  font-size: 11px;
+}
+
+.app-card--compact :deep(.code-gen-type-tag) {
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 18px;
 }
 </style>

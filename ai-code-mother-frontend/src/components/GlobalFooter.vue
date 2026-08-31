@@ -5,7 +5,7 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 const isHomePage = computed(() => route.name === 'home')
 const isAdminPage = computed(() => String(route.path).startsWith('/admin/'))
-const isUserInfoPage = computed(() => route.name === 'userInfo')
+const isUserInfoPage = computed(() => route.name === 'userInfo' || route.name === 'userProfile')
 const isAuthPage = computed(() => route.name === 'userLogin' || route.name === 'userRegister')
 const isMintUserPage = computed(() => isUserInfoPage.value || isAuthPage.value)
 </script>
