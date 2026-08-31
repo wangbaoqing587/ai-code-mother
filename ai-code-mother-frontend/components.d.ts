@@ -34,6 +34,7 @@ declare module 'vue' {
     APagination: typeof import('ant-design-vue/es')['Pagination']
     APopover: typeof import('ant-design-vue/es')['Popover']
     AppCard: typeof import('./src/components/AppCard.vue')['default']
+    AppCommentModal: typeof import('./src/components/AppCommentModal.vue')['default']
     AppDetailModal: typeof import('./src/components/AppDetailModal.vue')['default']
     AppListSection: typeof import('./src/components/AppListSection.vue')['default']
     AResult: typeof import('ant-design-vue/es')['Result']

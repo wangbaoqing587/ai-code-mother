@@ -64,3 +64,30 @@ create table if not exists chat_history
     INDEX idx_createTime (createTime),             -- 提升基于时间的查询性能
     INDEX idx_appId_createTime (appId, createTime) -- 游标查询核心索引
 ) comment '对话历史' collate = utf8mb4_unicode_ci;
+
+-- 应用点赞表
+create table if not exists app_like
+(
+    id         bigint auto_increment comment 'id' primary key,
+    appId      bigint                             not null comment '应用id',
+    userId     bigint                             not null comment '点赞用户id',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    UNIQUE KEY uk_appId_userId (appId, userId),
+    INDEX idx_appId (appId),
+    INDEX idx_userId (userId)
+) comment '应用点赞' collate = utf8mb4_unicode_ci;
+
+-- 应用评论表
+create table if not exists app_comment
+(
+    id         bigint auto_increment comment 'id' primary key,
+    appId      bigint                             not null comment '应用id',
+    userId     bigint                             not null comment '评论用户id',
+    content    varchar(1024)                      not null comment '评论内容',
+    createTime datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete   tinyint  default 0                 not null comment '是否删除',
+    INDEX idx_appId_createTime (appId, createTime),
+    INDEX idx_userId (userId)
+) comment '应用评论' collate = utf8mb4_unicode_ci;

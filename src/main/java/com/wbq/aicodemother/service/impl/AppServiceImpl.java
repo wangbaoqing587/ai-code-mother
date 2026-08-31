@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.wbq.aicodemother.ai.AiAppNameService;
@@ -15,19 +16,27 @@ import com.wbq.aicodemother.ai.model.AppNameResult;
 import com.wbq.aicodemother.utils.AppNameUtils;
 import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.constant.AppConstant;
+import com.wbq.aicodemother.constant.UserConstant;
 import com.wbq.aicodemother.core.AiCodeGeneratorFacade;
 import com.wbq.aicodemother.core.handler.StreamHandlerExecutor;
 import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.exception.ThrowUtils;
+import com.wbq.aicodemother.mapper.AppCommentMapper;
+import com.wbq.aicodemother.mapper.AppLikeMapper;
 import com.wbq.aicodemother.mapper.AppMapper;
 import com.wbq.aicodemother.model.dto.app.AppAddRequest;
+import com.wbq.aicodemother.model.dto.app.AppCommentQueryRequest;
 import com.wbq.aicodemother.model.dto.app.AppQueryRequest;
 import com.wbq.aicodemother.model.entity.App;
+import com.wbq.aicodemother.model.entity.AppComment;
+import com.wbq.aicodemother.model.entity.AppLike;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.model.enums.AppGenStatusEnum;
 import com.wbq.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
+import com.wbq.aicodemother.model.vo.AppCommentVO;
+import com.wbq.aicodemother.model.vo.AppLikeToggleVO;
 import com.wbq.aicodemother.model.vo.AppVO;
 import com.wbq.aicodemother.model.vo.UserVO;
 import com.wbq.aicodemother.service.AppService;
@@ -80,6 +89,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Resource
     private CacheEvictor cacheEvictor;
+
+    @Resource
+    private AppLikeMapper appLikeMapper;
+
+    @Resource
+    private AppCommentMapper appCommentMapper;
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
@@ -166,7 +181,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     /**
-     * 删除应用时，同时删除关联的对话历史
+     * 删除应用时，同时删除关联的对话历史、点赞和评论
      *
      * @param id 数据主键
      * @return
@@ -185,6 +200,16 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             chatHistoryService.deleteByAppId(appId);
         } catch (Exception e) {
             log.error("删除应用关联的对话历史失败：{}", e.getMessage());
+        }
+        try {
+            deleteLikesByAppId(appId);
+        } catch (Exception e) {
+            log.error("删除应用关联的点赞失败：{}", e.getMessage());
+        }
+        try {
+            deleteCommentsByAppId(appId);
+        } catch (Exception e) {
+            log.error("删除应用关联的评论失败：{}", e.getMessage());
         }
         // 删除应用
         boolean result = super.removeById(id);
@@ -205,6 +230,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     public AppVO getAppVO(App app) {
+        return getAppVO(app, null);
+    }
+
+    @Override
+    public AppVO getAppVO(App app, Long loginUserId) {
         if (app == null) {
             return null;
         }
@@ -216,11 +246,17 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             UserVO userVO = userService.getUserVO(user);
             appVO.setUser(userVO);
         }
+        fillAppInteractionStats(Collections.singletonList(appVO), loginUserId);
         return appVO;
     }
 
     @Override
     public List<AppVO> getAppVOList(List<App> appList) {
+        return getAppVOList(appList, null);
+    }
+
+    @Override
+    public List<AppVO> getAppVOList(List<App> appList, Long loginUserId) {
         if (CollUtil.isEmpty(appList)) {
             return new ArrayList<>();
         }
@@ -229,12 +265,45 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .collect(Collectors.toSet());
         Map<Long, UserVO> userVOMap = userService.listByIds(userIdSet).stream()
                 .collect(Collectors.toMap(User::getId, userService::getUserVO));
-        return appList.stream().map(app -> {
+        List<AppVO> appVOList = appList.stream().map(app -> {
             AppVO appVO = new AppVO();
             BeanUtil.copyProperties(app, appVO);
             appVO.setUser(userVOMap.get(app.getUserId()));
             return appVO;
         }).collect(Collectors.toList());
+        fillAppInteractionStats(appVOList, loginUserId);
+        return appVOList;
+    }
+
+    private void fillAppInteractionStats(List<AppVO> appVOList, Long loginUserId) {
+        if (CollUtil.isEmpty(appVOList)) {
+            return;
+        }
+        List<Long> appIds = appVOList.stream()
+                .map(AppVO::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (CollUtil.isEmpty(appIds)) {
+            return;
+        }
+        try {
+            Map<Long, Long> likeCountMap = countLikesByAppIds(appIds);
+            Map<Long, Long> commentCountMap = countCommentsByAppIds(appIds);
+            Set<Long> likedAppIds = getLikedAppIds(appIds, loginUserId);
+            for (AppVO appVO : appVOList) {
+                Long appId = appVO.getId();
+                appVO.setLikeCount(likeCountMap.getOrDefault(appId, 0L));
+                appVO.setCommentCount(commentCountMap.getOrDefault(appId, 0L));
+                appVO.setHasLiked(likedAppIds.contains(appId));
+            }
+        } catch (Exception e) {
+            log.error("填充应用互动统计失败：{}", e.getMessage());
+            for (AppVO appVO : appVOList) {
+                appVO.setLikeCount(0L);
+                appVO.setCommentCount(0L);
+                appVO.setHasLiked(false);
+            }
+        }
     }
 
     @Override
@@ -333,6 +402,173 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         });
     }
 
+    @Override
+    public AppLikeToggleVO toggleLike(Long appId, User loginUser) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        App app = getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        Long userId = loginUser.getId();
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("appId", appId)
+                .eq("userId", userId);
+        AppLike existingLike = appLikeMapper.selectOneByQuery(queryWrapper);
+        boolean liked;
+        if (existingLike != null) {
+            appLikeMapper.deleteById(existingLike.getId());
+            liked = false;
+        } else {
+            AppLike appLike = AppLike.builder()
+                    .appId(appId)
+                    .userId(userId)
+                    .build();
+            appLikeMapper.insert(appLike);
+            liked = true;
+        }
+        cacheEvictor.evictGoodAppPage();
+        AppLikeToggleVO result = new AppLikeToggleVO();
+        result.setLiked(liked);
+        result.setLikeCount(countLikesByAppId(appId));
+        return result;
+    }
 
+    @Override
+    public Long addComment(Long appId, String content, User loginUser) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(StrUtil.isBlank(content), ErrorCode.PARAMS_ERROR, "评论内容不能为空");
+        ThrowUtils.throwIf(content.length() > 1024, ErrorCode.PARAMS_ERROR, "评论内容过长");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        App app = getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        AppComment appComment = AppComment.builder()
+                .appId(appId)
+                .userId(loginUser.getId())
+                .content(content.trim())
+                .build();
+        int saved = appCommentMapper.insert(appComment);
+        ThrowUtils.throwIf(saved <= 0, ErrorCode.OPERATION_ERROR);
+        cacheEvictor.evictGoodAppPage();
+        return appComment.getId();
+    }
 
+    @Override
+    public boolean deleteComment(Long commentId, User loginUser) {
+        ThrowUtils.throwIf(commentId == null || commentId <= 0, ErrorCode.PARAMS_ERROR, "评论ID不能为空");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        AppComment oldComment = appCommentMapper.selectOneById(commentId);
+        ThrowUtils.throwIf(oldComment == null, ErrorCode.NOT_FOUND_ERROR, "评论不存在");
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        if (!oldComment.getUserId().equals(loginUser.getId()) && !isAdmin) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限删除该评论");
+        }
+        int removed = appCommentMapper.deleteById(commentId);
+        if (removed > 0) {
+            cacheEvictor.evictGoodAppPage();
+        }
+        return removed > 0;
+    }
+
+    @Override
+    public Page<AppCommentVO> listAppCommentByPage(Long appId, int pageSize, LocalDateTime lastCreateTime) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(pageSize <= 0 || pageSize > 50, ErrorCode.PARAMS_ERROR, "页面大小必须在1-50之间");
+        App app = getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        AppCommentQueryRequest queryRequest = new AppCommentQueryRequest();
+        queryRequest.setAppId(appId);
+        queryRequest.setLastCreateTime(lastCreateTime);
+        QueryWrapper queryWrapper = getCommentQueryWrapper(queryRequest);
+        Page<AppComment> commentPage = appCommentMapper.paginate(Page.of(1, pageSize), queryWrapper);
+        Page<AppCommentVO> resultPage = new Page<>(commentPage.getPageNumber(), commentPage.getPageSize(), commentPage.getTotalRow());
+        resultPage.setRecords(getAppCommentVOList(commentPage.getRecords()));
+        return resultPage;
+    }
+
+    private long countLikesByAppId(Long appId) {
+        if (appId == null || appId <= 0) {
+            return 0L;
+        }
+        return appLikeMapper.selectCountByQuery(QueryWrapper.create().eq("appId", appId));
+    }
+
+    private Map<Long, Long> countLikesByAppIds(Collection<Long> appIds) {
+        if (CollUtil.isEmpty(appIds)) {
+            return Collections.emptyMap();
+        }
+        List<AppLike> likes = appLikeMapper.selectListByQuery(QueryWrapper.create().in("appId", appIds));
+        return likes.stream().collect(Collectors.groupingBy(AppLike::getAppId, Collectors.counting()));
+    }
+
+    private Map<Long, Long> countCommentsByAppIds(Collection<Long> appIds) {
+        if (CollUtil.isEmpty(appIds)) {
+            return Collections.emptyMap();
+        }
+        List<AppComment> comments = appCommentMapper.selectListByQuery(QueryWrapper.create().in("appId", appIds));
+        return comments.stream().collect(Collectors.groupingBy(AppComment::getAppId, Collectors.counting()));
+    }
+
+    private Set<Long> getLikedAppIds(Collection<Long> appIds, Long userId) {
+        if (CollUtil.isEmpty(appIds) || userId == null || userId <= 0) {
+            return Collections.emptySet();
+        }
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .select("appId")
+                .in("appId", appIds)
+                .eq("userId", userId);
+        return appLikeMapper.selectListByQuery(queryWrapper).stream()
+                .map(AppLike::getAppId)
+                .collect(Collectors.toSet());
+    }
+
+    private void deleteLikesByAppId(Long appId) {
+        appLikeMapper.deleteByQuery(QueryWrapper.create().eq("appId", appId));
+    }
+
+    private void deleteCommentsByAppId(Long appId) {
+        appCommentMapper.deleteByQuery(QueryWrapper.create().eq("appId", appId));
+    }
+
+    private List<AppCommentVO> getAppCommentVOList(List<AppComment> commentList) {
+        if (CollUtil.isEmpty(commentList)) {
+            return new ArrayList<>();
+        }
+        Set<Long> userIdSet = commentList.stream()
+                .map(AppComment::getUserId)
+                .collect(Collectors.toSet());
+        Map<Long, UserVO> userVOMap = userService.listByIds(userIdSet).stream()
+                .collect(Collectors.toMap(User::getId, userService::getUserVO));
+        return commentList.stream().map(comment -> {
+            AppCommentVO commentVO = new AppCommentVO();
+            BeanUtil.copyProperties(comment, commentVO);
+            commentVO.setUser(userVOMap.get(comment.getUserId()));
+            return commentVO;
+        }).collect(Collectors.toList());
+    }
+
+    private QueryWrapper getCommentQueryWrapper(AppCommentQueryRequest queryRequest) {
+        QueryWrapper queryWrapper = QueryWrapper.create();
+        if (queryRequest == null) {
+            return queryWrapper;
+        }
+        Long id = queryRequest.getId();
+        Long appId = queryRequest.getAppId();
+        Long userId = queryRequest.getUserId();
+        String content = queryRequest.getContent();
+        LocalDateTime lastCreateTime = queryRequest.getLastCreateTime();
+        String sortField = queryRequest.getSortField();
+        String sortOrder = queryRequest.getSortOrder();
+        queryWrapper.eq("id", id)
+                .eq("appId", appId)
+                .eq("userId", userId)
+                .like("content", content);
+        if (lastCreateTime != null) {
+            queryWrapper.lt("createTime", lastCreateTime);
+        }
+        if (StrUtil.isNotBlank(sortField)) {
+            queryWrapper.orderBy(sortField, "ascend".equals(sortOrder));
+        } else {
+            queryWrapper.orderBy("createTime", false);
+        }
+        return queryWrapper;
+    }
 }

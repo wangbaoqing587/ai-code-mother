@@ -180,3 +180,51 @@ export async function updateApp(body: API.AppUpdateRequest, options?: { [key: st
     ...(options || {}),
   })
 }
+
+export async function toggleAppLike(body: API.AppLikeToggleRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseAppLikeToggleVO>('/app/like/toggle', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+export async function addAppComment(body: API.AppCommentAddRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseLong>('/app/comment/add', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+export async function deleteAppComment(body: API.DeleteRequest, options?: { [key: string]: any }) {
+  return request<API.BaseResponseBoolean>('/app/comment/delete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+export async function listAppComment(
+  params: API.listAppCommentParams,
+  options?: { [key: string]: any },
+) {
+  const { appId: param0, ...queryParams } = params
+  return request<API.BaseResponsePageAppCommentVO>(`/app/comment/list/${param0}`, {
+    method: 'GET',
+    params: {
+      pageSize: '10',
+      ...queryParams,
+    },
+    ...(options || {}),
+  })
+}

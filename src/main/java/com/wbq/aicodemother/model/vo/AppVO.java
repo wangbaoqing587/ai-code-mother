@@ -73,5 +73,20 @@ public class AppVO implements Serializable {
      */
     private UserVO user;
 
+    /**
+     * 点赞数
+     */
+    private Long likeCount;
+
+    /**
+     * 评论数
+     */
+    private Long commentCount;
+
+    /**
+     * 当前用户是否已点赞
+     */
+    private Boolean hasLiked;
+
     private static final long serialVersionUID = 1L;
 }

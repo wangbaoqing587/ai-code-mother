@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import { icProductCoverDefault } from '@/assets'
 import UserAvatar from '@/components/UserAvatar.vue'
 import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
+import AppCommentModal from '@/components/AppCommentModal.vue'
+import { toggleAppLike } from '@/api/appController'
 import { getDeployUrl } from '@/config/env'
 import { useLoginUserStore } from '@/stores/loginUser'
 
@@ -17,6 +20,21 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const commentModalOpen = ref(false)
+const likeCount = ref(Number(props.app.likeCount) || 0)
+const commentCount = ref(Number(props.app.commentCount) || 0)
+const hasLiked = ref(props.app.hasLiked ?? false)
+const liking = ref(false)
+
+watch(
+  () => props.app,
+  (app) => {
+    likeCount.value = Number(app.likeCount) || 0
+    commentCount.value = Number(app.commentCount) || 0
+    hasLiked.value = app.hasLiked ?? false
+  },
+  { deep: true },
+)
 
 const coverUrl = computed(() => props.app.cover || icProductCoverDefault)
 const authorName = computed(() => props.app.user?.userName || '未知用户')
@@ -48,6 +66,43 @@ function handleViewWork() {
     return
   }
   window.open(deployUrl.value, '_blank')
+}
+
+async function handleToggleLike(event: Event) {
+  event.stopPropagation()
+  if (!props.app.id) {
+    return
+  }
+  if (!loginUserStore.loginUser.id) {
+    message.warning('请先登录')
+    return
+  }
+  if (liking.value) {
+    return
+  }
+  liking.value = true
+  try {
+    const res = await toggleAppLike({ appId: props.app.id })
+    if (res.data.code === 0 && res.data.data) {
+      hasLiked.value = !!res.data.data.liked
+      likeCount.value = Number(res.data.data.likeCount) || 0
+    } else {
+      message.error(res.data.message || '操作失败')
+    }
+  } catch {
+    message.error('点赞失败，请稍后重试')
+  } finally {
+    liking.value = false
+  }
+}
+
+function handleOpenComment(event: Event) {
+  event.stopPropagation()
+  commentModalOpen.value = true
+}
+
+function handleCommentAdded() {
+  commentCount.value = (Number(commentCount.value) || 0) + 1
 }
 </script>
 
@@ -81,9 +136,32 @@ function handleViewWork() {
           <div class="app-card-title">{{ app.appName || '未命名应用' }}</div>
           <CodeGenTypeTag :code-gen-type="app.codeGenType" />
         </div>
-        <div class="app-card-sub">{{ authorName }}</div>
+        <div class="app-card-sub">
+          <span class="app-card-author">{{ authorName }}</span>
+          <div class="app-card-stats">
+            <button
+              type="button"
+              class="stat-btn"
+              :class="{ active: hasLiked }"
+              :disabled="liking"
+              @click="handleToggleLike"
+            >
+              <span class="stat-icon">♥</span>
+              <span>{{ likeCount }}</span>
+            </button>
+            <button type="button" class="stat-btn" @click="handleOpenComment">
+              <span class="stat-icon">💬</span>
+              <span>{{ commentCount }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
+    <AppCommentModal
+      v-model:open="commentModalOpen"
+      :app="app"
+      @comment-added="handleCommentAdded"
+    />
   </div>
 </template>
 
@@ -188,11 +266,55 @@ function handleViewWork() {
 }
 
 .app-card-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 4px;
+  min-width: 0;
+}
+
+.app-card-author {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   color: rgba(0, 0, 0, 0.45);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.app-card-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
+.stat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+.stat-btn.active {
+  color: #ef4444;
+}
+
+.stat-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.stat-icon {
+  font-size: 12px;
+  line-height: 1;
 }
 </style>

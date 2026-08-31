@@ -4,6 +4,29 @@ declare namespace API {
     appName?: string
   }
 
+  type AppCommentAddRequest = {
+    appId?: number | string
+    content?: string
+  }
+
+  type AppCommentVO = {
+    id?: number
+    appId?: number
+    userId?: number
+    content?: string
+    createTime?: string
+    user?: UserVO
+  }
+
+  type AppLikeToggleRequest = {
+    appId?: number | string
+  }
+
+  type AppLikeToggleVO = {
+    liked?: boolean
+    likeCount?: number
+  }
+
   type AppAdminUpdateRequest = {
     id?: number | string
     appName?: string
@@ -49,6 +72,9 @@ declare namespace API {
     createTime?: string
     updateTime?: string
     user?: UserVO
+    likeCount?: number
+    commentCount?: number
+    hasLiked?: boolean
   }
 
   type BaseResponseAppVO = {
@@ -69,9 +95,21 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseAppLikeToggleVO = {
+    code?: number
+    data?: AppLikeToggleVO
+    message?: string
+  }
+
   type BaseResponseLong = {
     code?: number
     data?: number
+    message?: string
+  }
+
+  type BaseResponsePageAppCommentVO = {
+    code?: number
+    data?: PageAppCommentVO
     message?: string
   }
 
@@ -168,6 +206,12 @@ declare namespace API {
     id: number
   }
 
+  type listAppCommentParams = {
+    appId: number | string
+    pageSize?: number
+    lastCreateTime?: string
+  }
+
   type listAppChatHistoryParams = {
     appId: number | string
     pageSize?: number
@@ -183,6 +227,15 @@ declare namespace API {
     userRole?: string
     createTime?: string
     updateTime?: string
+  }
+
+  type PageAppCommentVO = {
+    records?: AppCommentVO[]
+    pageNumber?: number
+    pageSize?: number
+    totalPage?: number
+    totalRow?: number
+    optimizeCountQuery?: boolean
   }
 
   type PageAppVO = {

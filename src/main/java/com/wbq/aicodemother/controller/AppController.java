@@ -19,6 +19,8 @@ import com.wbq.aicodemother.model.dto.app.*;
 import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
+import com.wbq.aicodemother.model.vo.AppCommentVO;
+import com.wbq.aicodemother.model.vo.AppLikeToggleVO;
 import com.wbq.aicodemother.model.vo.AppVO;
 import com.wbq.aicodemother.ratelimit.annotation.RateLimit;
 import com.wbq.aicodemother.ratelimit.enums.RateLimitType;
@@ -212,11 +214,11 @@ public class AppController {
      * 根据 id 获取应用详情
      */
     @GetMapping("/get/vo")
-    public BaseResponse<AppVO> getAppVOById(long id) {
+    public BaseResponse<AppVO> getAppVOById(long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         App app = appService.getById(id);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
-        return ResultUtils.success(appService.getAppVO(app));
+        return ResultUtils.success(appService.getAppVO(app, getOptionalLoginUserId(request)));
     }
 
     /**
@@ -234,7 +236,7 @@ public class AppController {
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
+        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords(), getOptionalLoginUserId(request));
         appVOPage.setRecords(appVOList);
         return ResultUtils.success(appVOPage);
     }
@@ -245,10 +247,11 @@ public class AppController {
     @PostMapping("/good/list/page/vo")
     @Cacheable(
             value = AppConstant.GOOD_APP_PAGE_CACHE,
-            key = "T(com.wbq.aicodemother.utils.CacheKeyUtils).generateKey(#appQueryRequest)",
+            key = "T(com.wbq.aicodemother.utils.CacheKeyUtils).generateGoodAppPageKey(#appQueryRequest, @appController.getOptionalLoginUserId(#request))",
             condition = "#appQueryRequest.pageNum <= 10"
     )
-    public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
+    public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest,
+                                                         HttpServletRequest request) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long pageNum = appQueryRequest.getPageNum();
         long pageSize = appQueryRequest.getPageSize();
@@ -257,9 +260,52 @@ public class AppController {
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
+        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords(), getOptionalLoginUserId(request));
         appVOPage.setRecords(appVOList);
         return ResultUtils.success(appVOPage);
+    }
+
+    @PostMapping("/like/toggle")
+    public BaseResponse<AppLikeToggleVO> toggleLike(@RequestBody AppLikeToggleRequest request,
+                                                    HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null || request.getAppId() == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(appService.toggleLike(request.getAppId(), loginUser));
+    }
+
+    @PostMapping("/comment/add")
+    public BaseResponse<Long> addComment(@RequestBody AppCommentAddRequest request,
+                                         HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        Long commentId = appService.addComment(request.getAppId(), request.getContent(), loginUser);
+        return ResultUtils.success(commentId);
+    }
+
+    @PostMapping("/comment/delete")
+    public BaseResponse<Boolean> deleteComment(@RequestBody DeleteRequest deleteRequest,
+                                               HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() <= 0, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        return ResultUtils.success(appService.deleteComment(deleteRequest.getId(), loginUser));
+    }
+
+    @GetMapping("/comment/list/{appId}")
+    public BaseResponse<Page<AppCommentVO>> listAppComment(@PathVariable Long appId,
+                                                           @RequestParam(defaultValue = "10") int pageSize,
+                                                           @RequestParam(required = false) LocalDateTime lastCreateTime) {
+        return ResultUtils.success(appService.listAppCommentByPage(appId, pageSize, lastCreateTime));
+    }
+
+    public Long getOptionalLoginUserId(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (userObj instanceof User user && user.getId() != null) {
+            return user.getId();
+        }
+        return null;
     }
 
     /**

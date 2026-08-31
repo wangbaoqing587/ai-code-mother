@@ -1,14 +1,18 @@
 package com.wbq.aicodemother.service;
 
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.wbq.aicodemother.model.dto.app.AppAddRequest;
 import com.wbq.aicodemother.model.dto.app.AppQueryRequest;
 import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
+import com.wbq.aicodemother.model.vo.AppCommentVO;
+import com.wbq.aicodemother.model.vo.AppLikeToggleVO;
 import com.wbq.aicodemother.model.vo.AppVO;
 import reactor.core.publisher.Flux;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,12 +31,30 @@ public interface AppService extends IService<App> {
     AppVO getAppVO(App app);
 
     /**
+     * 获取应用封装（含当前用户点赞状态）
+     *
+     * @param app 应用
+     * @param loginUserId 当前登录用户 id
+     * @return 应用封装
+     */
+    AppVO getAppVO(App app, Long loginUserId);
+
+    /**
      * 获取应用封装列表
      *
      * @param appList 应用列表
      * @return 应用封装列表
      */
     List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * 获取应用封装列表（含当前用户点赞状态）
+     *
+     * @param appList 应用列表
+     * @param loginUserId 当前登录用户 id
+     * @return 应用封装列表
+     */
+    List<AppVO> getAppVOList(List<App> appList, Long loginUserId);
 
     /**
      * 根据查询条件构造查询参数
@@ -77,4 +99,12 @@ public interface AppService extends IService<App> {
      * @param appUrl 应用访问URL
      */
     void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    AppLikeToggleVO toggleLike(Long appId, User loginUser);
+
+    Long addComment(Long appId, String content, User loginUser);
+
+    boolean deleteComment(Long commentId, User loginUser);
+
+    Page<AppCommentVO> listAppCommentByPage(Long appId, int pageSize, LocalDateTime lastCreateTime);
 }
