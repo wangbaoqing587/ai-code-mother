@@ -139,7 +139,7 @@ onMounted(() => {
         v-model="prompt"
         class="hero-prompt"
         variant="hero"
-        placeholder="帮我创建个人博客网站"
+        placeholder="用一句话描述你想生成的网站，越具体效果越好"
         :loading="isCreating"
         :min-rows="2"
         :max-rows="6"
@@ -303,26 +303,97 @@ onMounted(() => {
     transform 0.2s ease;
 }
 
-.quick-prompt:nth-child(2n) {
-  border-color: rgba(129, 212, 250, 0.5);
+.quick-prompt:nth-child(1) {
+  border-color: rgba(136, 216, 176, 0.55);
+  box-shadow:
+    0 4px 12px rgba(136, 216, 176, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(2) {
+  border-color: rgba(129, 212, 250, 0.55);
   box-shadow:
     0 4px 12px rgba(129, 212, 250, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.quick-prompt:nth-child(3n) {
+.quick-prompt:nth-child(3) {
+  border-color: rgba(255, 183, 130, 0.6);
+  box-shadow:
+    0 4px 12px rgba(255, 183, 130, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(4) {
   border-color: rgba(255, 224, 130, 0.65);
   box-shadow:
     0 4px 12px rgba(255, 224, 130, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.quick-prompt:hover {
+.quick-prompt:nth-child(5) {
+  border-color: rgba(186, 168, 255, 0.55);
+  box-shadow:
+    0 4px 12px rgba(186, 168, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(6) {
+  border-color: rgba(255, 163, 158, 0.55);
+  box-shadow:
+    0 4px 12px rgba(255, 163, 158, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(1):hover {
   background: #f0fdf7;
-  border-color: rgba(91, 196, 160, 0.65);
+  border-color: rgba(91, 196, 160, 0.7);
   box-shadow:
     0 6px 16px rgba(136, 216, 176, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(2):hover {
+  background: #f0f9ff;
+  border-color: rgba(96, 190, 240, 0.75);
+  box-shadow:
+    0 6px 16px rgba(129, 212, 250, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(3):hover {
+  background: #fff7ed;
+  border-color: rgba(255, 150, 90, 0.75);
+  box-shadow:
+    0 6px 16px rgba(255, 183, 130, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(4):hover {
+  background: #fffef5;
+  border-color: rgba(240, 200, 80, 0.8);
+  box-shadow:
+    0 6px 16px rgba(255, 224, 130, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(5):hover {
+  background: #f5f3ff;
+  border-color: rgba(160, 140, 240, 0.75);
+  box-shadow:
+    0 6px 16px rgba(186, 168, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:nth-child(6):hover {
+  background: #fff5f5;
+  border-color: rgba(240, 120, 115, 0.75);
+  box-shadow:
+    0 6px 16px rgba(255, 163, 158, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.quick-prompt:hover {
   transform: translateY(-1px);
 }
 
