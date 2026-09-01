@@ -125,7 +125,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         // 7.收集AI响应的内容，并且在完成后保存记录到对话历史
         // 增加超时限制和应用状态设置
         Flux<String> executedFlux = streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
-                .timeout(Duration.ofMinutes(3))
+                .timeout(Duration.ofMinutes(5))
                 .doOnComplete(() -> updateGenStatus(appId, AppGenStatusEnum.IDLE))
                 .doOnError(error -> updateGenStatus(appId, AppGenStatusEnum.FAILED));
         ConnectableFlux<String> connectableFlux = executedFlux.publish();

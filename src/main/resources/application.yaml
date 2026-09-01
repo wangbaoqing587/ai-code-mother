@@ -46,7 +46,7 @@ langchain4j:
       api-key: ${LLM_API_KEY:}
       model-name: ${LLM_STREAMING_MODEL_NAME:deepseek-v4-pro}
       max-tokens: 16384
-      timeout: 180s
+      timeout: 300s
       log-requests: true
       log-responses: true
     # 推理 AI 模型配置（用于复杂的推理任务）
