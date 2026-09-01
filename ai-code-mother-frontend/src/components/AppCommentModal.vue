@@ -111,7 +111,7 @@ async function handleSubmit() {
     <a-spin :spinning="loading">
       <div v-if="comments.length" class="comment-list">
         <div v-for="item in comments" :key="item.id" class="comment-item">
-          <UserAvatar :size="32" :src="item.user?.userAvatar || ''" />
+          <UserAvatar :size="32" :src="item.user?.userAvatar || ''" :gender="item.user?.gender" />
           <div class="comment-body">
             <div class="comment-meta">
               <span class="comment-user">{{ item.user?.userName || '未知用户' }}</span>

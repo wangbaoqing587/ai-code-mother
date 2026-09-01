@@ -66,6 +66,12 @@ public class User implements Serializable {
     private String userProfile;
 
     /**
+     * 性别：1男 0女
+     */
+    @Column("gender")
+    private Integer gender;
+
+    /**
      * 用户角色：user/admin
      */
     @Column("userRole")

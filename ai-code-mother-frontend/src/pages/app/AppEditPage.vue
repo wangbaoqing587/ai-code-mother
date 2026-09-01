@@ -43,6 +43,7 @@ const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser
 const canEdit = computed(() => isAdmin.value || isOwner.value)
 const creatorName = computed(() => appInfo.value.user?.userName || '未知用户')
 const creatorAvatar = computed(() => appInfo.value.user?.userAvatar || '')
+const creatorGender = computed(() => appInfo.value.user?.gender ?? 1)
 const accessUrl = computed(() => {
   const { deployKey, codeGenType } = appInfo.value
   if (deployKey) {
@@ -234,7 +235,7 @@ onMounted(async () => {
             </a-descriptions-item>
             <a-descriptions-item label="创建者">
               <div class="creator-cell">
-                <UserAvatar :size="24" :src="creatorAvatar" />
+                <UserAvatar :size="24" :src="creatorAvatar" :gender="creatorGender" />
                 <span>{{ creatorName }}</span>
               </div>
             </a-descriptions-item>
@@ -315,7 +316,7 @@ onMounted(async () => {
           </a-descriptions-item>
           <a-descriptions-item label="创建者">
             <div class="creator-cell">
-              <UserAvatar :size="24" :src="creatorAvatar" />
+              <UserAvatar :size="24" :src="creatorAvatar" :gender="creatorGender" />
               <span>{{ creatorName }}</span>
             </div>
           </a-descriptions-item>

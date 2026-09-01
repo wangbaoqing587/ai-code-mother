@@ -12,6 +12,7 @@ import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.model.dto.user.UserQueryRequest;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.mapper.UserMapper;
+import com.wbq.aicodemother.model.enums.GenderEnum;
 import com.wbq.aicodemother.model.enums.UserRoleEnum;
 import com.wbq.aicodemother.model.vo.LoginUserVO;
 import com.wbq.aicodemother.model.vo.UserVO;
@@ -58,10 +59,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     }
 
     @Override
-    public long userRegister(String userAccount, String userName, String userPassword, String checkPassword) {
+    public long userRegister(String userAccount, String userName, String userPassword, String checkPassword, Integer gender) {
         // 1. 校验
         if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (gender == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        if (GenderEnum.getEnumByValue(gender) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "性别参数错误");
         }
         if (userAccount.length() < 4) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
@@ -94,6 +101,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
         user.setUserName(trimmedUserName);
+        user.setGender(gender);
         user.setUserRole(UserRoleEnum.USER.getValue());
         boolean saveResult = this.save(user);
         if (!saveResult) {

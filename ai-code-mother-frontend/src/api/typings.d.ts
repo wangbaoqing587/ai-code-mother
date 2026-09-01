@@ -224,6 +224,7 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    gender?: number
     userRole?: string
     createTime?: string
     updateTime?: string
@@ -295,6 +296,7 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    gender?: number
     userRole?: string
     editTime?: string
     createTime?: string
@@ -307,6 +309,7 @@ declare namespace API {
     userAccount?: string
     userAvatar?: string
     userProfile?: string
+    gender?: number
     userRole?: string
   }
 
@@ -338,6 +341,7 @@ declare namespace API {
     userName?: string
     userPassword?: string
     checkPassword?: string
+    gender?: number
   }
 
   type UserUpdateRequest = {
@@ -345,6 +349,7 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    gender?: number
     userRole?: string
   }
 
@@ -354,6 +359,7 @@ declare namespace API {
     userName?: string
     userAvatar?: string
     userProfile?: string
+    gender?: number
     userRole?: string
     createTime?: string
   }

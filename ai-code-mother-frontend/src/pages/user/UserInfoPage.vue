@@ -20,6 +20,11 @@ const ROLE_TEXT_MAP: Record<string, string> = {
   user: '用户',
 }
 
+const GENDER_TEXT_MAP: Record<number, string> = {
+  1: '男',
+  0: '女',
+}
+
 const EMPTY_PROFILE_TEXT = '还没有填写简介'
 
 const route = useRoute()
@@ -53,6 +58,7 @@ const formState = reactive({
   userName: '',
   userAvatar: '',
   userProfile: '',
+  gender: 1,
 })
 
 const passwordFormState = reactive({
@@ -84,6 +90,14 @@ const userRoleText = computed(() => {
   return ROLE_TEXT_MAP[role] ?? role
 })
 
+const genderText = computed(() => {
+  const gender = displayUser.value?.gender
+  if (gender === undefined || gender === null) {
+    return '-'
+  }
+  return GENDER_TEXT_MAP[gender] ?? '-'
+})
+
 function formatDateText(createTime?: string) {
   if (!createTime) {
     return '-'
@@ -108,6 +122,7 @@ function syncFormFromLoginUser() {
   formState.userName = loginUserStore.loginUser.userName ?? ''
   formState.userAvatar = loginUserStore.loginUser.userAvatar ?? ''
   formState.userProfile = loginUserStore.loginUser.userProfile ?? ''
+  formState.gender = loginUserStore.loginUser.gender ?? 1
 }
 
 const beforeAvatarUpload: UploadProps['beforeUpload'] = async (file) => {
@@ -149,6 +164,7 @@ async function handleSave() {
       userName: formState.userName,
       userAvatar: formState.userAvatar,
       userProfile: formState.userProfile,
+      gender: formState.gender,
     })
     if (res.data.code === 0) {
       message.success('保存成功')
@@ -329,7 +345,7 @@ onMounted(async () => {
         <a-form v-if="!isGuestMode && isEditing" layout="vertical" :model="formState" class="edit-form">
           <a-form-item label="头像">
             <div class="avatar-edit">
-              <UserAvatar :size="64" :src="formState.userAvatar" />
+              <UserAvatar :size="64" :src="formState.userAvatar" :gender="formState.gender" />
               <a-upload accept="image/*" :show-upload-list="false" :before-upload="beforeAvatarUpload">
                 <a-button>本地上传</a-button>
               </a-upload>
@@ -348,6 +364,12 @@ onMounted(async () => {
           <a-form-item label="角色">
             <a-input :value="userRoleText" disabled />
           </a-form-item>
+          <a-form-item label="性别">
+            <a-radio-group v-model:value="formState.gender">
+              <a-radio :value="1">男</a-radio>
+              <a-radio :value="0">女</a-radio>
+            </a-radio-group>
+          </a-form-item>
           <a-form-item label="简介">
             <a-textarea v-model:value="formState.userProfile" placeholder="请输入简介" :rows="4" />
           </a-form-item>
@@ -364,7 +386,7 @@ onMounted(async () => {
 
         <a-descriptions v-else bordered :column="1">
           <a-descriptions-item label="头像">
-            <UserAvatar :size="64" :src="displayUser?.userAvatar" />
+            <UserAvatar :size="64" :src="displayUser?.userAvatar" :gender="displayUser?.gender" />
           </a-descriptions-item>
           <a-descriptions-item label="昵称">
             {{ displayUser?.userName || '-' }}
@@ -374,6 +396,9 @@ onMounted(async () => {
           </a-descriptions-item>
           <a-descriptions-item v-if="!isGuestMode" label="角色">
             {{ userRoleText }}
+          </a-descriptions-item>
+          <a-descriptions-item label="性别">
+            {{ genderText }}
           </a-descriptions-item>
           <a-descriptions-item label="简介">
             <span :class="{ 'empty-profile-text': !displayUser?.userProfile?.trim() }">

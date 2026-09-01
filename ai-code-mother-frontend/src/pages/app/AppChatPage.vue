@@ -105,6 +105,7 @@ const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM
 const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
 const canManage = computed(() => isAdmin.value || isOwner.value)
 const userAvatar = computed(() => loginUserStore.loginUser.userAvatar || '')
+const userGender = computed(() => loginUserStore.loginUser.gender ?? 1)
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -701,6 +702,7 @@ onBeforeUnmount(() => {
                 class="message-avatar"
                 :size="36"
                 :src="userAvatar"
+                :gender="userGender"
               />
               <div v-else class="message-avatar-placeholder" aria-hidden="true" />
             </div>

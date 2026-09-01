@@ -95,7 +95,7 @@ const onUserMenuClick: MenuProps['onClick'] = async ({ key }) => {
         placement="bottomRight"
       >
         <div class="user-info">
-          <UserAvatar :src="loginUserStore.loginUser.userAvatar" />
+          <UserAvatar :src="loginUserStore.loginUser.userAvatar" :gender="loginUserStore.loginUser.gender" />
           <span class="user-name">{{ loginUserStore.loginUser.userName }}</span>
           <span class="greeting">{{ greetingText }}</span>
         </div>

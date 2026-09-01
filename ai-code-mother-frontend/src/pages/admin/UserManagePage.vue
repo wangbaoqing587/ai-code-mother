@@ -27,18 +27,25 @@ const formState = reactive<API.UserUpdateRequest>({
   userName: '',
   userAvatar: '',
   userProfile: '',
+  gender: 1,
   userRole: 'user',
 })
+
+const GENDER_TEXT_MAP: Record<number, string> = {
+  1: '男',
+  0: '女',
+}
 
 const columns: TableColumnsType = [
   { title: 'id', dataIndex: 'id', width: '6%', align: 'center' },
   { title: '账号', dataIndex: 'userAccount', width: '12%', ellipsis: true },
   { title: '昵称', dataIndex: 'userName', width: '10%', ellipsis: true },
+  { title: '性别', dataIndex: 'gender', key: 'gender', width: '6%', align: 'center' },
   { title: '头像', dataIndex: 'userAvatar', key: 'userAvatar', width: '6%', align: 'center' },
-  { title: '简介', dataIndex: 'userProfile', key: 'userProfile', width: '18%', ellipsis: true },
+  { title: '简介', dataIndex: 'userProfile', key: 'userProfile', width: '16%', ellipsis: true },
   { title: '角色', dataIndex: 'userRole', width: '8%', align: 'center' },
-  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: '18%' },
-  { title: '操作', key: 'action', width: '22%', align: 'left' },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime', width: '16%' },
+  { title: '操作', key: 'action', width: '20%', align: 'left' },
 ]
 
 const EMPTY_USER_PROFILE_TEXT = '该用户还没有填写简介'
@@ -93,6 +100,7 @@ function openEditModal(record: API.UserVO) {
   formState.userName = record.userName
   formState.userAvatar = record.userAvatar
   formState.userProfile = record.userProfile
+  formState.gender = record.gender ?? 1
   formState.userRole = record.userRole ?? 'user'
   isModalOpen.value = true
 }
@@ -105,6 +113,7 @@ async function handleSubmit() {
       userName: formState.userName,
       userAvatar: formState.userAvatar,
       userProfile: formState.userProfile,
+      gender: formState.gender,
       userRole: formState.userRole,
     })
     if (res.data.code === 0) {
@@ -195,8 +204,14 @@ onMounted(() => {
       }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'userAvatar'">
-          <UserAvatar :src="(record as API.UserVO).userAvatar" />
+        <template v-if="column.key === 'gender'">
+          {{ GENDER_TEXT_MAP[(record as API.UserVO).gender ?? -1] ?? '-' }}
+        </template>
+        <template v-else-if="column.key === 'userAvatar'">
+          <UserAvatar
+            :src="(record as API.UserVO).userAvatar"
+            :gender="(record as API.UserVO).gender"
+          />
         </template>
         <template v-else-if="column.key === 'userProfile'">
           <span
@@ -252,6 +267,15 @@ onMounted(() => {
         </a-form-item>
         <a-form-item label="头像">
           <a-input v-model:value="formState.userAvatar" placeholder="请输入头像 URL" />
+        </a-form-item>
+        <a-form-item label="性别">
+          <a-select
+            v-model:value="formState.gender"
+            :options="[
+              { label: '男', value: 1 },
+              { label: '女', value: 0 },
+            ]"
+          />
         </a-form-item>
         <a-form-item label="简介">
           <a-textarea v-model:value="formState.userProfile" placeholder="请输入简介" :rows="3" />

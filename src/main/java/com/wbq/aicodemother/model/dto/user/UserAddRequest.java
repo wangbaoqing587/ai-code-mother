@@ -28,6 +28,11 @@ public class UserAddRequest implements Serializable {
     private String userProfile;
 
     /**
+     * 性别：1男 0女
+     */
+    private Integer gender;
+
+    /**
      * 用户角色: user, admin
      */
     private String userRole;

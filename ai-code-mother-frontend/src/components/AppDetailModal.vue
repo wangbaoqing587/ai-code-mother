@@ -22,6 +22,7 @@ const emit = defineEmits<{
 
 const creatorName = computed(() => props.app.user?.userName || '未知用户')
 const creatorAvatar = computed(() => props.app.user?.userAvatar || '')
+const creatorGender = computed(() => props.app.user?.gender ?? 1)
 const createTimeText = computed(() => formatDateTime(props.app.createTime))
 
 function handleOpenChange(value: boolean) {
@@ -42,7 +43,7 @@ function handleOpenChange(value: boolean) {
       <div class="detail-section">
         <div class="detail-label">创建者</div>
         <div class="detail-creator">
-          <UserAvatar :size="40" :src="creatorAvatar" />
+          <UserAvatar :size="40" :src="creatorAvatar" :gender="creatorGender" />
           <span class="detail-creator-name">{{ creatorName }}</span>
         </div>
       </div>

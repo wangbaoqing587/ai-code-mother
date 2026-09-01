@@ -11,6 +11,7 @@ import com.wbq.aicodemother.exception.BusinessException;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.exception.ThrowUtils;
 import com.wbq.aicodemother.model.dto.user.*;
+import com.wbq.aicodemother.model.enums.GenderEnum;
 import com.wbq.aicodemother.model.vo.LoginUserVO;
 import com.wbq.aicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,7 +53,8 @@ public class UserController {
         String userName = userRegisterRequest.getUserName();
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userName, userPassword, checkPassword);
+        Integer gender = userRegisterRequest.getGender();
+        long result = userService.userRegister(userAccount, userName, userPassword, checkPassword, gender);
         return ResultUtils.success(result);
     }
 
@@ -106,6 +108,11 @@ public class UserController {
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
         BeanUtil.copyProperties(userAddRequest, user);
+        if (user.getGender() == null) {
+            user.setGender(GenderEnum.MALE.getValue());
+        } else if (GenderEnum.getEnumByValue(user.getGender()) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "性别参数错误");
+        }
         // 默认密码 12345678
         final String DEFAULT_PASSWORD = "12345678";
         String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
@@ -155,7 +162,7 @@ public class UserController {
     }
 
     /**
-     * 更新用户（管理员可更新任意用户；普通用户仅可更新自己的昵称、头像、简介）
+     * 更新用户（管理员可更新任意用户；普通用户仅可更新自己的昵称、头像、简介、性别）
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
@@ -172,11 +179,18 @@ public class UserController {
         if (userName != null && userName.trim().length() > UserConstant.MAX_USER_NAME_LENGTH) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过长");
         }
+        Integer gender = userUpdateRequest.getGender();
+        if (gender != null && GenderEnum.getEnumByValue(gender) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "性别参数错误");
+        }
         User user = new User();
         user.setId(userUpdateRequest.getId());
         user.setUserName(userUpdateRequest.getUserName());
         user.setUserAvatar(userUpdateRequest.getUserAvatar());
         user.setUserProfile(userUpdateRequest.getUserProfile());
+        if (gender != null) {
+            user.setGender(gender);
+        }
         if (isAdmin) {
             user.setUserRole(userUpdateRequest.getUserRole());
         }

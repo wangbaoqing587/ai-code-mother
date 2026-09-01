@@ -13,6 +13,7 @@ const formState = reactive<API.UserRegisterRequest>({
   userAccount: '',
   userPassword: '',
   checkPassword: '',
+  gender: 1,
 })
 
 async function handleSubmit() {
@@ -63,6 +64,16 @@ async function handleSubmit() {
           placeholder="请输入账号"
           autocomplete="username"
         />
+      </a-form-item>
+      <a-form-item
+        name="gender"
+        label="性别"
+        :rules="[{ required: true, message: '请选择性别' }]"
+      >
+        <a-radio-group v-model:value="formState.gender">
+          <a-radio :value="1">男</a-radio>
+          <a-radio :value="0">女</a-radio>
+        </a-radio-group>
       </a-form-item>
       <a-form-item
         name="userPassword"

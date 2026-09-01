@@ -41,6 +41,7 @@ watch(
 const coverUrl = computed(() => props.app.cover || icProductCoverDefault)
 const authorName = computed(() => props.app.user?.userName || '未知用户')
 const authorAvatar = computed(() => props.app.user?.userAvatar || '')
+const authorGender = computed(() => props.app.user?.gender ?? 1)
 const hasDeployKey = computed(() => !!props.app.deployKey)
 const deployUrl = computed(() =>
   props.app.deployKey ? getDeployUrl(props.app.deployKey, props.app.codeGenType) : '',
@@ -148,9 +149,9 @@ function handleCommentAdded() {
         class="author-avatar-btn"
         @click="handleViewAuthor"
       >
-        <UserAvatar :size="avatarSize" :src="authorAvatar" />
+        <UserAvatar :size="avatarSize" :src="authorAvatar" :gender="authorGender" />
       </button>
-      <UserAvatar v-else :size="avatarSize" :src="authorAvatar" />
+      <UserAvatar v-else :size="avatarSize" :src="authorAvatar" :gender="authorGender" />
       <div class="app-card-text">
         <div class="app-card-top">
           <div class="app-card-title">{{ app.appName || '未命名应用' }}</div>

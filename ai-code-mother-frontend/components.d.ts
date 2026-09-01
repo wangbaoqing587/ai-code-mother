@@ -39,6 +39,8 @@ declare module 'vue' {
     AppDetailModal: typeof import('./src/components/AppDetailModal.vue')['default']
     AppListSection: typeof import('./src/components/AppListSection.vue')['default']
     AppLoadMoreListSection: typeof import('./src/components/AppLoadMoreListSection.vue')['default']
+    ARadio: typeof import('ant-design-vue/es')['Radio']
+    ARadioGroup: typeof import('ant-design-vue/es')['RadioGroup']
     AResult: typeof import('ant-design-vue/es')['Result']
     ASelect: typeof import('ant-design-vue/es')['Select']
     ASpace: typeof import('ant-design-vue/es')['Space']

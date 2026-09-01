@@ -28,4 +28,9 @@ public class UserRegisterRequest implements Serializable {
      * 确认密码
      */
     private String checkPassword;
+
+    /**
+     * 性别：1男 0女
+     */
+    private Integer gender;
 }

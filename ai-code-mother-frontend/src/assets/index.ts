@@ -1,5 +1,6 @@
 export { default as avatarChatbot } from './avatar_chatbot.png'
-export { default as avatarDefault } from './avatar_default.png'
+export { default as avatarDefaultFemale } from './avatar_default_female.png'
+export { default as avatarDefaultMale } from './avatar_default_male.png'
 export { default as iconAigenerate } from './icon_aigenerate.png'
 export { default as iconCopy } from './icon_copy.png'
 export { default as icProductCoverDefault } from './ic_product_cover_default.png'
