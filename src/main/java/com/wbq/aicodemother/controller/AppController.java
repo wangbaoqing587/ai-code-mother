@@ -378,6 +378,10 @@ public class AppController {
         long id = appAdminUpdateRequest.getId();
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
+        if (AppConstant.GOOD_APP_PRIORITY.equals(appAdminUpdateRequest.getPriority())
+                && StrUtil.isBlank(oldApp.getDeployKey())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "仅已部署的应用可设为精选");
+        }
         App updateApp = new App();
         BeanUtil.copyProperties(appAdminUpdateRequest, updateApp);
         updateApp.setEditTime(LocalDateTime.now());

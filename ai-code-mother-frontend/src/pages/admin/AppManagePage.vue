@@ -97,8 +97,16 @@ function isFeaturedApp(record: API.AppVO) {
   return record.priority === GOOD_APP_PRIORITY
 }
 
+function isDeployedApp(record: API.AppVO) {
+  return !!record.deployKey?.trim()
+}
+
 function handleFeatured(record: API.AppVO) {
   if (!record.id) {
+    return
+  }
+  if (!isDeployedApp(record)) {
+    message.warning('仅已部署的应用可设为精选')
     return
   }
   showConfirmModal({
