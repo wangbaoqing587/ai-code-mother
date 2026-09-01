@@ -3,6 +3,13 @@ String? _jsonStringify(dynamic value) {
   return value.toString();
 }
 
+int? _parseGender(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value.toString());
+}
+
 class LoginUser {
   const LoginUser({
     this.id,
@@ -10,6 +17,7 @@ class LoginUser {
     this.userName,
     this.userAvatar,
     this.userProfile,
+    this.gender,
     this.userRole,
     this.createTime,
     this.updateTime,
@@ -22,6 +30,7 @@ class LoginUser {
       userName: json['userName'] as String?,
       userAvatar: json['userAvatar'] as String?,
       userProfile: json['userProfile'] as String?,
+      gender: _parseGender(json['gender']),
       userRole: json['userRole'] as String?,
       createTime: json['createTime'] as String?,
       updateTime: json['updateTime'] as String?,
@@ -33,6 +42,7 @@ class LoginUser {
   final String? userName;
   final String? userAvatar;
   final String? userProfile;
+  final int? gender;
   final String? userRole;
   final String? createTime;
   final String? updateTime;
@@ -46,6 +56,7 @@ class LoginUser {
         'userName': userName,
         'userAvatar': userAvatar,
         'userProfile': userProfile,
+        'gender': gender,
         'userRole': userRole,
         'createTime': createTime,
         'updateTime': updateTime,
@@ -60,6 +71,7 @@ class UserVO {
     this.userName,
     this.userAvatar,
     this.userProfile,
+    this.gender,
     this.userRole,
     this.createTime,
   });
@@ -71,6 +83,7 @@ class UserVO {
       userName: json['userName'] as String?,
       userAvatar: json['userAvatar'] as String?,
       userProfile: json['userProfile'] as String?,
+      gender: _parseGender(json['gender']),
       userRole: json['userRole'] as String?,
       createTime: json['createTime'] as String?,
     );
@@ -81,6 +94,7 @@ class UserVO {
   final String? userName;
   final String? userAvatar;
   final String? userProfile;
+  final int? gender;
   final String? userRole;
   final String? createTime;
 }

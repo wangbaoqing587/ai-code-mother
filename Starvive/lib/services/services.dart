@@ -38,6 +38,7 @@ class UserService {
     required String userAccount,
     required String userPassword,
     required String checkPassword,
+    required int gender,
   }) {
     return _client.request(
       '/user/register',
@@ -46,6 +47,7 @@ class UserService {
         'userAccount': userAccount,
         'userPassword': userPassword,
         'checkPassword': checkPassword,
+        'gender': gender,
       },
       fromJsonT: (data) => data?.toString(),
     );
@@ -61,6 +63,7 @@ class UserService {
     String? userName,
     String? userAvatar,
     String? userProfile,
+    int? gender,
     String? userRole,
   }) {
     return _client.request(
@@ -71,6 +74,7 @@ class UserService {
         'userName': userName,
         'userAvatar': userAvatar,
         'userProfile': userProfile,
+        'gender': gender,
         'userRole': userRole,
       },
       fromJsonT: (data) => data as bool?,
@@ -156,6 +160,22 @@ class AppService {
   ) {
     return _client.request(
       '/app/good/list/page/vo',
+      method: 'POST',
+      data: query,
+      fromJsonT: (data) => data != null
+          ? PageResult.fromJson(
+              data as Map<String, dynamic>,
+              (json) => AppVO.fromJson(json),
+            )
+          : null,
+    );
+  }
+
+  Future<BaseResponse<PageResult<AppVO>>> listAppPlazaVoByPage(
+    Map<String, dynamic> query,
+  ) {
+    return _client.request(
+      '/app/plaza/list/page/vo',
       method: 'POST',
       data: query,
       fromJsonT: (data) => data != null

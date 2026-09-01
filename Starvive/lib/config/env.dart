@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:starvive/core/constants/code_gen_type.dart';
 
-const String defaultApiBaseUrl = 'http://localhost:8123/api';
-const String defaultDeployDomain = 'http://localhost';
+const String defaultApiBaseUrl = 'http://192.168.24.106:8123/api';
+const String defaultDeployDomain = 'http://192.168.24.106:8080';
 
 String _defaultApiForPlatform() {
   if (Platform.isAndroid) {
-    return 'http://10.0.2.2:8123/api';
+    return 'http://192.168.24.106:8123/api';
   }
   return defaultApiBaseUrl;
 }

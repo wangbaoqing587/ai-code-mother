@@ -1,6 +1,7 @@
 const goodAppPriority = 99;
 const myAppPageSize = 6;
 const goodAppPageSize = 6;
+const plazaPageSize = 12;
 const chatHistoryPageSize = 10;
 const adminPageSize = 10;
 

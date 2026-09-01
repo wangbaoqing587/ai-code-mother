@@ -122,6 +122,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   final _checkPasswordController = TextEditingController();
+  int _gender = 1;
   bool _loading = false;
 
   Future<void> _submit() async {
@@ -135,6 +136,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           _accountController.text.trim(),
           _passwordController.text,
           _checkPasswordController.text,
+          _gender,
         );
     setState(() => _loading = false);
     if (err != null) {
@@ -185,6 +187,22 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                     TextField(
                       controller: _accountController,
                       decoration: const InputDecoration(labelText: '账号'),
+                    ),
+                    const SizedBox(height: 16),
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('性别', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<int>(
+                      segments: const [
+                        ButtonSegment(value: 1, label: Text('男')),
+                        ButtonSegment(value: 0, label: Text('女')),
+                      ],
+                      selected: {_gender},
+                      onSelectionChanged: (value) {
+                        setState(() => _gender = value.first);
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextField(

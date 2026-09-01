@@ -8,10 +8,12 @@ class UserAvatar extends StatelessWidget {
     super.key,
     this.size = 36,
     this.src,
+    this.gender,
   });
 
   final double size;
   final String? src;
+  final int? gender;
 
   @override
   Widget build(BuildContext context) {
@@ -47,8 +49,11 @@ class UserAvatar extends StatelessWidget {
   }
 
   Widget _defaultImage() {
+    final asset = gender == 0
+        ? AppAssets.avatarDefaultFemale
+        : AppAssets.avatarDefaultMale;
     return Image.asset(
-      AppAssets.avatarDefault,
+      asset,
       fit: BoxFit.cover,
     );
   }

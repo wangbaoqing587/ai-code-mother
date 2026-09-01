@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:starvive/config/env.dart';
 import 'package:starvive/core/constants/app_constants.dart';
 import 'package:starvive/models/models.dart';
+import 'package:starvive/providers/providers.dart';
 import 'package:starvive/widgets/code_gen_type_tag.dart';
 import 'package:starvive/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class AppCard extends StatelessWidget {
+class AppCard extends ConsumerWidget {
   const AppCard({super.key, required this.app});
 
   final AppVO app;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final coverUrl = app.cover?.isNotEmpty == true
         ? app.cover!
         : AppAssets.productCoverDefault;
@@ -22,7 +23,7 @@ class AppCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(color: AppColors.cardBorder, width: 2),
         boxShadow: [
           BoxShadow(
@@ -61,7 +62,7 @@ class AppCard extends StatelessWidget {
                   color: Colors.black.withValues(alpha: 0.02),
                   child: Center(
                     child: Wrap(
-                      spacing: 12,
+                      spacing: AppSpacing.sm,
                       alignment: WrapAlignment.center,
                       children: [
                         _ActionBtn(
@@ -69,7 +70,9 @@ class AppCard extends StatelessWidget {
                           primary: true,
                           onTap: () {
                             if (app.id != null) {
-                              context.push('/app/chat/${app.id}');
+                              ref.read(currentChatAppIdProvider.notifier).state =
+                                  app.id;
+                              ref.read(mainTabIndexProvider.notifier).state = 0;
                             }
                           },
                         ),
@@ -93,14 +96,16 @@ class AppCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              14,
+              AppSpacing.md,
+              AppSpacing.md,
+            ),
             child: Row(
               children: [
-                UserAvatar(
-                  size: 36,
-                  src: app.user?.userAvatar,
-                ),
-                const SizedBox(width: 12),
+                UserAvatar(size: 36, src: app.user?.userAvatar, gender: app.user?.gender),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +116,7 @@ class AppCard extends StatelessWidget {
                             child: Text(
                               app.appName ?? '未命名应用',
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: AppFontSize.md,
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
@@ -122,11 +127,11 @@ class AppCard extends StatelessWidget {
                             CodeGenTypeTag(codeGenType: app.codeGenType!),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xs),
                       Text(
                         app.user?.userName ?? '未知用户',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.sm,
                           color: Colors.black45,
                         ),
                         maxLines: 1,
@@ -165,13 +170,13 @@ class _ActionBtn extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           child: Text(
             label,
             style: TextStyle(
               color: primary ? Colors.white : Colors.black87,
               fontWeight: FontWeight.w500,
-              fontSize: 14,
+              fontSize: AppFontSize.sm,
             ),
           ),
         ),

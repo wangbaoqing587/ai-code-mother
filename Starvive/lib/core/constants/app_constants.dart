@@ -24,11 +24,34 @@ class AppColors {
   static const divider = Color(0x3394A3B8);
 }
 
+class AppSpacing {
+  static const xs = 4.0;
+  static const sm = 8.0;
+  static const md = 16.0;
+  static const lg = 24.0;
+  static const xl = 32.0;
+}
+
+class AppRadius {
+  static const sm = 8.0;
+  static const md = 12.0;
+  static const lg = 16.0;
+  static const xl = 20.0;
+}
+
+class AppFontSize {
+  static const sm = 13.0;
+  static const md = 16.0;
+  static const lg = 20.0;
+  static const xl = 22.0;
+}
+
 class AppAssets {
   static const iconLogo = 'assets/images/icon_logo.png';
   static const iconCoverLogo = 'assets/images/icon_cover_logo.png';
   static const avatarChatbot = 'assets/images/avatar_chatbot.png';
-  static const avatarDefault = 'assets/images/avatar_default.png';
+  static const avatarDefaultMale = 'assets/images/avatar_default_male.png';
+  static const avatarDefaultFemale = 'assets/images/avatar_default_female.png';
   static const productCoverDefault = 'assets/images/ic_product_cover_default.png';
   static const iconWeb = 'assets/images/icon_web.png';
   static const iconPageOpen = 'assets/images/icon_page_open.png';

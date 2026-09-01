@@ -1,17 +1,11 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:starvive/config/env.dart';
 import 'package:starvive/core/constants/app_constants.dart';
-import 'package:starvive/core/constants/business_constants.dart';
 import 'package:starvive/core/utils/format_utils.dart';
 import 'package:starvive/models/models.dart';
 import 'package:starvive/providers/providers.dart';
-import 'package:starvive/services/services.dart';
 import 'package:starvive/widgets/code_gen_type_tag.dart';
 import 'package:starvive/widgets/home_background.dart';
 import 'package:starvive/widgets/user_avatar.dart';
@@ -31,8 +25,6 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
   bool _isLoading = false;
   bool _isSubmitting = false;
   final _nameController = TextEditingController();
-  final _coverController = TextEditingController();
-  int? _priority;
 
   @override
   void initState() {
@@ -48,17 +40,11 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
     }
     setState(() => _isLoading = true);
     try {
-      final service = ref.read(appServiceProvider);
-      final res = auth.isAdmin
-          ? await service.getAppByIdByAdmin(widget.appId)
-          : await service.getAppVoById(widget.appId);
+      final res = await ref.read(appServiceProvider).getAppVoById(widget.appId);
       if (res.isSuccess && res.data != null) {
         _appInfo = res.data!;
         _nameController.text = _appInfo.appName ?? '';
-        _coverController.text = _appInfo.cover ?? '';
-        _priority = _appInfo.priority;
-        final canEdit = auth.isAdmin || _appInfo.userId == auth.id;
-        if (!canEdit) {
+        if (_appInfo.userId != auth.id) {
           context.go('/');
         }
       }
@@ -77,27 +63,6 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
     return null;
   }
 
-  Future<void> _pickCover() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
-    if (bytes.length > 2 * 1024 * 1024) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('图片大小不能超过 2MB')));
-      return;
-    }
-    try {
-      _coverController.text = compressImageToBase64(Uint8List.fromList(bytes), 800);
-      setState(() {});
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('封面已选择')));
-    } catch (_) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('封面读取失败')));
-    }
-  }
-
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context)
@@ -106,19 +71,10 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
     }
     setState(() => _isSubmitting = true);
     try {
-      final auth = ref.read(authProvider).user;
-      final service = ref.read(appServiceProvider);
-      final res = auth.isAdmin
-          ? await service.updateAppByAdmin(
-              id: widget.appId,
-              appName: _nameController.text.trim(),
-              cover: _coverController.text.isEmpty ? null : _coverController.text,
-              priority: _priority,
-            )
-          : await service.updateApp(
-              id: widget.appId,
-              appName: _nameController.text.trim(),
-            );
+      final res = await ref.read(appServiceProvider).updateApp(
+            id: widget.appId,
+            appName: _nameController.text.trim(),
+          );
       if (res.isSuccess) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('保存成功')));
@@ -136,46 +92,39 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _coverController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = ref.watch(authProvider).user;
-    final isAdmin = auth.isAdmin;
-
     return HomeBackground(
       child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 760),
                   child: Card(
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isAdmin ? AppColors.adminBorder : AppColors.mintBorder,
-                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
+                      side: BorderSide(color: AppColors.mintBorder),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
+                          const Text(
                             '应用信息编辑',
-                            textAlign: isAdmin ? TextAlign.center : TextAlign.left,
-                            style: const TextStyle(
-                              fontSize: 20,
+                            style: TextStyle(
+                              fontSize: AppFontSize.lg,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: AppSpacing.lg),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
@@ -183,7 +132,7 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                                 onPressed: () => context.pop(),
                                 child: const Text('返回'),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: AppSpacing.sm),
                               ElevatedButton(
                                 onPressed: _isSubmitting ? null : _save,
                                 child: _isSubmitting
@@ -196,82 +145,12 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: AppSpacing.lg),
                           TextField(
                             controller: _nameController,
                             decoration: const InputDecoration(labelText: '应用名称'),
                           ),
-                          const SizedBox(height: 16),
-                          const Text('应用封面'),
-                          const SizedBox(height: 8),
-                          if (_coverController.text.isNotEmpty)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: _coverController.text.startsWith('data:image')
-                                  ? Image.memory(
-                                      base64Decode(
-                                        _coverController.text.contains(',')
-                                            ? _coverController.text.split(',').last
-                                            : _coverController.text,
-                                      ),
-                                      height: 160,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.network(
-                                      _coverController.text,
-                                      height: 160,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const SizedBox(
-                                        height: 160,
-                                        child: Center(child: Text('封面预览失败')),
-                                      ),
-                                    ),
-                            ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _coverController,
-                                  decoration: const InputDecoration(
-                                    hintText: '请输入封面 URL',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              OutlinedButton(
-                                onPressed: _pickCover,
-                                child: const Text('本地上传'),
-                              ),
-                            ],
-                          ),
-                          if (isAdmin) ...[
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: 200,
-                                  child: TextField(
-                                    decoration: const InputDecoration(labelText: '优先级'),
-                                    keyboardType: TextInputType.number,
-                                    controller: TextEditingController(
-                                      text: _priority?.toString() ?? '',
-                                    ),
-                                    onChanged: (v) =>
-                                        _priority = int.tryParse(v),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  '99 表示精选应用',
-                                  style: TextStyle(color: AppColors.textPlaceholder),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.md),
                           TextField(
                             enabled: false,
                             decoration: InputDecoration(
@@ -280,29 +159,19 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                             ),
                             maxLines: 4,
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.md),
                           const Text('生成类型'),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: AppSpacing.sm),
                           if (_appInfo.codeGenType != null)
                             CodeGenTypeTag(codeGenType: _appInfo.codeGenType!),
-                          if (isAdmin) ...[
-                            const SizedBox(height: 16),
-                            TextField(
-                              enabled: false,
-                              decoration: InputDecoration(
-                                labelText: '部署密钥',
-                                hintText: _appInfo.deployKey ?? '-',
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 28),
+                          const SizedBox(height: AppSpacing.xl),
                           const Divider(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.md),
                           const Text(
                             '应用信息',
-                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: AppFontSize.md),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: AppSpacing.md),
                           _infoTile('应用 ID', Text(_appInfo.id ?? '-')),
                           _infoTile(
                             '创建者',
@@ -311,8 +180,9 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                                 UserAvatar(
                                   size: 24,
                                   src: _appInfo.user?.userAvatar,
+                                  gender: _appInfo.user?.gender,
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: AppSpacing.sm),
                                 Text(_appInfo.user?.userName ?? '未知用户'),
                               ],
                             ),
@@ -328,7 +198,7 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                                       Expanded(
                                         child: Text(
                                           _accessUrl!,
-                                          style: const TextStyle(fontSize: 13),
+                                          style: const TextStyle(fontSize: AppFontSize.sm),
                                         ),
                                       ),
                                       OutlinedButton(

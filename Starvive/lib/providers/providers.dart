@@ -87,11 +87,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String account,
     String password,
     String checkPassword,
+    int gender,
   ) async {
     final res = await _userService.register(
       userAccount: account,
       userPassword: password,
       checkPassword: checkPassword,
+      gender: gender,
     );
     if (res.isSuccess) return null;
     return res.message ?? '注册失败';
@@ -111,6 +113,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     String? userName,
     String? userAvatar,
     String? userProfile,
+    int? gender,
     String? userRole,
   }) async {
     final res = await _userService.updateUser(
@@ -118,6 +121,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       userName: userName,
       userAvatar: userAvatar,
       userProfile: userProfile,
+      gender: gender,
       userRole: userRole,
     );
     if (res.isSuccess) {
@@ -132,3 +136,7 @@ final authProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref.watch(userServiceProvider));
 });
+
+final mainTabIndexProvider = StateProvider<int>((ref) => 0);
+
+final currentChatAppIdProvider = StateProvider<String?>((ref) => null);

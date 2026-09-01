@@ -32,7 +32,6 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
   List<ChatMessage> _messages = [];
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
-  bool _isLoadingApp = false;
   bool _isLoadingHistory = false;
   bool _isLoadingMoreHistory = false;
   bool _isGenerating = false;
@@ -93,15 +92,12 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
   }
 
   Future<void> _fetchAppInfo() async {
-    setState(() => _isLoadingApp = true);
     try {
       final res = await ref.read(appServiceProvider).getAppVoById(widget.appId);
       if (res.isSuccess && res.data != null) {
-        _appInfo = res.data!;
+        setState(() => _appInfo = res.data!);
       }
-    } finally {
-      setState(() => _isLoadingApp = false);
-    }
+    } catch (_) {}
   }
 
   Future<void> _fetchChatHistory(bool isLoadMore) async {
@@ -309,29 +305,29 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
 
   void _showAppDetail() {
     final auth = ref.read(authProvider).user;
-    final canManage = auth.isAdmin || _appInfo.userId == auth.id;
+    final isOwner = _appInfo.userId == auth.id;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               _appInfo.appName ?? '未命名应用',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: AppFontSize.lg, fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             if (_appInfo.codeGenType != null)
               CodeGenTypeTag(codeGenType: _appInfo.codeGenType!),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             Text('初始提示词：${_appInfo.initPrompt ?? '-'}'),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             Text('创建时间：${formatDateTime(_appInfo.createTime)}'),
-            const SizedBox(height: 24),
-            if (canManage)
+            const SizedBox(height: AppSpacing.lg),
+            if (isOwner)
               Row(
                 children: [
                   OutlinedButton(
@@ -341,17 +337,14 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
                     },
                     child: const Text('编辑'),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.sm),
                   OutlinedButton(
                     onPressed: () async {
-                      final auth = ref.read(authProvider).user;
-                      final service = ref.read(appServiceProvider);
-                      final res = auth.isAdmin
-                          ? await service.deleteAppByAdmin(widget.appId)
-                          : await service.deleteApp(widget.appId);
+                      final res =
+                          await ref.read(appServiceProvider).deleteApp(widget.appId);
                       if (res.isSuccess) {
                         Navigator.pop(context);
-                        context.go('/');
+                        ref.read(currentChatAppIdProvider.notifier).state = null;
                       }
                     },
                     child: const Text('删除', style: TextStyle(color: Colors.red)),
@@ -481,7 +474,11 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
                         return const SizedBox.shrink();
                       }
                       final msg = _messages[msgIndex];
-                      return _MessageBubble(message: msg, userAvatar: auth.userAvatar);
+                      return _MessageBubble(
+                        message: msg,
+                        userAvatar: auth.userAvatar,
+                        userGender: auth.gender,
+                      );
                     },
                   ),
           ),
@@ -559,10 +556,15 @@ class _AppChatPageState extends ConsumerState<AppChatPage>
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, this.userAvatar});
+  const _MessageBubble({
+    required this.message,
+    this.userAvatar,
+    this.userGender,
+  });
 
   final ChatMessage message;
   final String? userAvatar;
+  final int? userGender;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +620,7 @@ class _MessageBubble extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           if (isUser)
-            UserAvatar(size: 36, src: userAvatar)
+            UserAvatar(size: 36, src: userAvatar, gender: userGender)
           else
             const SizedBox(width: 36),
         ],
