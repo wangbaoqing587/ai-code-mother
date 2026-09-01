@@ -103,6 +103,7 @@ const previewUrl = computed(() => {
 const canPreview = computed(() => showPreview.value && !!previewUrl.value)
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
 const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
+const isDeployed = computed(() => !!appInfo.value.deployKey?.trim())
 const canManage = computed(() => isAdmin.value || isOwner.value)
 const userAvatar = computed(() => loginUserStore.loginUser.userAvatar || '')
 const userGender = computed(() => loginUserStore.loginUser.gender ?? 1)
@@ -640,8 +641,15 @@ onBeforeUnmount(() => {
         <a-button class="header-btn header-btn-outline" :loading="isDownloading" @click="handleDownload">
           下载代码
         </a-button>
-        <a-button class="header-btn header-btn-primary" type="primary" :loading="isDeploying" @click="handleDeploy">
-          部署
+        <a-button
+          class="header-btn"
+          :class="isDeployed ? 'header-btn-deployed' : 'header-btn-primary'"
+          :type="isDeployed ? 'default' : 'primary'"
+          :disabled="isDeployed"
+          :loading="isDeploying"
+          @click="handleDeploy"
+        >
+          {{ isDeployed ? '已部署' : '部署' }}
         </a-button>
       </a-space>
     </div>
@@ -852,6 +860,28 @@ onBeforeUnmount(() => {
 .header-btn-primary:hover {
   background: #4db892 !important;
   border-color: #4db892 !important;
+}
+
+.header-btn-deployed {
+  background: #b8d4c8 !important;
+  border-color: #b8d4c8 !important;
+  color: #5a7a6e !important;
+  box-shadow: none;
+  cursor: default;
+}
+
+.header-btn-deployed:hover,
+.header-btn-deployed:focus {
+  background: #b8d4c8 !important;
+  border-color: #b8d4c8 !important;
+  color: #5a7a6e !important;
+}
+
+.header-btn-deployed[disabled] {
+  background: #b8d4c8 !important;
+  border-color: #b8d4c8 !important;
+  color: #5a7a6e !important;
+  opacity: 1;
 }
 
 .chat-body {
