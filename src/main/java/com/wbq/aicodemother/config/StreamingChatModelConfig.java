@@ -1,5 +1,6 @@
 package com.wbq.aicodemother.config;
 
+import com.wbq.aicodemother.monitor.AiModelMonitorListener;
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
@@ -10,10 +11,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+import java.util.List;
+
 @Configuration
 @ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
 public class StreamingChatModelConfig {
+    @Resource
+    AiModelMonitorListener aiModelMonitorListener;
 
     private String baseUrl;
 
@@ -44,6 +49,7 @@ public class StreamingChatModelConfig {
                 .logRequests(logRequests)
                 .logResponses(logResponses)
                 .httpClientBuilder(httpClientBuilder)
+                .listeners(List.of(aiModelMonitorListener))
                 .build();
     }
 }

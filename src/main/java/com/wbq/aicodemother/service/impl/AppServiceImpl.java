@@ -13,6 +13,8 @@ import com.wbq.aicodemother.ai.AiAppNameServiceFactory;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingService;
 import com.wbq.aicodemother.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.wbq.aicodemother.ai.model.AppNameResult;
+import com.wbq.aicodemother.monitor.MonitorContext;
+import com.wbq.aicodemother.monitor.MonitorContextHolder;
 import com.wbq.aicodemother.utils.AppNameUtils;
 import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.constant.AppConstant;
@@ -119,15 +121,24 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 5.在调用AI前，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        // 6.设置监控上下文（用户id和应用id）
+        MonitorContextHolder.setContext(MonitorContext.builder()
+                .userId(loginUser.getId().toString())
+                .appId(appId.toString())
+                .build());
+        // 7.调用AI生成代码
         updateGenStatus(appId, AppGenStatusEnum.GENERATING);
-        // 6.调用AI生成代码
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-        // 7.收集AI响应的内容，并且在完成后保存记录到对话历史
+        // 8.收集AI响应的内容，并且在完成后保存记录到对话历史
         // 增加超时限制和应用状态设置
         Flux<String> executedFlux = streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
                 .timeout(Duration.ofMinutes(5))
                 .doOnComplete(() -> updateGenStatus(appId, AppGenStatusEnum.IDLE))
-                .doOnError(error -> updateGenStatus(appId, AppGenStatusEnum.FAILED));
+                .doOnError(error -> updateGenStatus(appId, AppGenStatusEnum.FAILED))
+                .doFinally(signalType -> {
+                    // 流结束时清理（无论成功/失败/取消）
+                    MonitorContextHolder.clearContext();
+                });
         ConnectableFlux<String> connectableFlux = executedFlux.publish();
         connectableFlux.connect();
         return connectableFlux;
