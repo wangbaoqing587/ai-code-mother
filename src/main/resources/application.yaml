@@ -3,7 +3,6 @@ spring:
     name: ai-code-mother-backend
   # session 配置
   session:
-    store-type: redis
     timeout: 2592000
   # mysql
   datasource:
