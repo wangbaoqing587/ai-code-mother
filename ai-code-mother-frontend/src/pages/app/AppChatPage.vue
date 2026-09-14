@@ -102,10 +102,14 @@ const previewUrl = computed(() => {
 })
 const canPreview = computed(() => showPreview.value && !!previewUrl.value)
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
-const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
+const isOwner = computed(() => isSameUser(appInfo.value.userId, loginUserStore.loginUser.id))
 const canManage = computed(() => isAdmin.value || isOwner.value)
 const userAvatar = computed(() => loginUserStore.loginUser.userAvatar || '')
 const userGender = computed(() => loginUserStore.loginUser.gender ?? 1)
+
+function isSameUser(left?: string | number, right?: string | number) {
+  return left != null && right != null && String(left) === String(right)
+}
 
 function createMessageId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -152,7 +156,7 @@ async function scrollToBottom() {
 
 async function fetchAppInfo(silent = false) {
   if (!appId.value) {
-    return
+    return false
   }
   if (!silent) {
     isLoadingApp.value = true
@@ -160,12 +164,17 @@ async function fetchAppInfo(silent = false) {
   try {
     const res = await getAppVoById({ id: appId.value })
     if (res.data.code === 0 && res.data.data) {
+      if (!silent && !isSameUser(res.data.data.userId, loginUserStore.loginUser.id)) {
+        await router.replace('/403')
+        return false
+      }
       appInfo.value = res.data.data
-      return
+      return true
     }
     if (!silent) {
       message.error('获取应用信息失败：' + (res.data.message ?? '未知错误'))
     }
+    return false
   } finally {
     if (!silent) {
       isLoadingApp.value = false
@@ -215,6 +224,9 @@ async function fetchChatHistory(isLoadMore = false, silent = false) {
       messages.value = mapped
       updateHistoryCursor()
       await scrollToBottom()
+      return
+    }
+    if (res.data.code === 40101) {
       return
     }
     message.error('获取对话历史失败：' + (res.data.message ?? '未知错误'))
@@ -583,7 +595,10 @@ async function initPage() {
   historyTotal.value = 0
   historyCursor.value = undefined
   isGenerating.value = false
-  await fetchAppInfo()
+  const loaded = await fetchAppInfo()
+  if (!loaded) {
+    return
+  }
   await fetchChatHistory(false)
 
   if (appInfo.value.genStatus === APP_GEN_STATUS_GENERATING) {

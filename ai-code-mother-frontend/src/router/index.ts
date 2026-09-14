@@ -95,12 +95,16 @@ const router = createRouter({
       },
     },
     {
-      path: '/401',
+      path: '/403',
       name: 'noAuth',
       component: () => import('@/pages/NoAuthPage.vue'),
       meta: {
         access: accessConfig.noAuth,
       },
+    },
+    {
+      path: '/401',
+      redirect: '/403',
     },
   ],
 })

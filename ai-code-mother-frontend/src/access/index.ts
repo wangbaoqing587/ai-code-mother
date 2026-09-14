@@ -18,6 +18,11 @@ export function setupAccessGuard(router: Router) {
 
     const loginUser = loginUserStore.loginUser
 
+    if (to.path === '/user/login' && loginUser.id) {
+      next('/')
+      return
+    }
+
     if (checkAccess(loginUser, needAccess)) {
       next()
       return
@@ -33,6 +38,6 @@ export function setupAccessGuard(router: Router) {
       return
     }
 
-    next('/401')
+    next('/403')
   })
 }

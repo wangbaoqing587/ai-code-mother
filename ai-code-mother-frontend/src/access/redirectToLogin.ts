@@ -13,3 +13,10 @@ export function redirectToLogin(redirect?: string) {
   loginUserStore.logoutLoginUser()
   window.location.href = buildLoginPath(redirect)
 }
+
+export function redirectTo403() {
+  if (window.location.pathname === '/403') {
+    return
+  }
+  window.location.href = '/403'
+}

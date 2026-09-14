@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { message } from 'ant-design-vue'
-import { redirectToLogin } from '@/access/redirectToLogin'
+import { redirectTo403, redirectToLogin } from '@/access/redirectToLogin'
 import { API_BASE_URL } from '@/config/env'
 
 const myAxios = axios.create({
@@ -26,6 +26,12 @@ myAxios.interceptors.response.use(
       if (!requestUrl.includes('/user/get/login') && !requestUrl.includes('/user/login')) {
         message.warning('请先登录')
         redirectToLogin()
+      }
+    }
+    if (data.code === 40101) {
+      const method = String(response.config.method || 'get').toLowerCase()
+      if (method === 'get') {
+        redirectTo403()
       }
     }
     return response

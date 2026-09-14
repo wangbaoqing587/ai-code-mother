@@ -41,7 +41,12 @@ const formState = reactive({
 
 const appId = computed(() => parseRouteParamId(route.params.id))
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === ACCESS_ENUM.ADMIN)
-const isOwner = computed(() => appInfo.value.userId === loginUserStore.loginUser.id)
+const isOwner = computed(
+  () =>
+    appInfo.value.userId != null &&
+    loginUserStore.loginUser.id != null &&
+    String(appInfo.value.userId) === String(loginUserStore.loginUser.id),
+)
 const canEdit = computed(() => isAdmin.value || isOwner.value)
 const creatorName = computed(() => appInfo.value.user?.userName || '未知用户')
 const creatorAvatar = computed(() => appInfo.value.user?.userAvatar || '')
@@ -86,8 +91,7 @@ async function fetchAppInfo() {
       appInfo.value = res.data.data
       syncFormFromApp()
       if (!canEdit.value) {
-        message.error('无权编辑该应用')
-        await router.replace('/')
+        await router.replace('/403')
       }
       return
     }

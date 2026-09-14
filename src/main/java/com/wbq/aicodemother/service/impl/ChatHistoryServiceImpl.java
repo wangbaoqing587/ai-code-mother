@@ -5,7 +5,6 @@ import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.wbq.aicodemother.constant.UserConstant;
 import com.wbq.aicodemother.exception.ErrorCode;
 import com.wbq.aicodemother.exception.ThrowUtils;
 import com.wbq.aicodemother.mapper.ChatHistoryMapper;
@@ -74,9 +73,8 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
         App app = appService.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
         boolean isCreator = app.getUserId().equals(loginUser.getId());
-        ThrowUtils.throwIf(!isAdmin && !isCreator, ErrorCode.NO_AUTH_ERROR, "无权查看该应用的对话历史");
+        ThrowUtils.throwIf(!isCreator, ErrorCode.NO_AUTH_ERROR, "无权查看该应用的对话历史");
         ChatHistoryQueryRequest queryRequest = new ChatHistoryQueryRequest();
         queryRequest.setAppId(appId);
         queryRequest.setLastCreateTime(lastCreateTime);
