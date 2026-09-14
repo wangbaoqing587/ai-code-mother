@@ -28,6 +28,7 @@ import com.wbq.aicodemother.ratelimit.enums.RateLimitType;
 import com.wbq.aicodemother.service.AppService;
 import com.wbq.aicodemother.service.ProjectDownloadService;
 import com.wbq.aicodemother.service.UserService;
+import com.wbq.aicodemother.utils.AppTagUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -190,6 +191,7 @@ public class AppController {
         updateApp.setId(id);
         updateApp.setAppName(appUpdateRequest.getAppName());
         updateApp.setVisibility(visibility);
+        updateApp.setTags(AppTagUtils.toJson(appUpdateRequest.getTags()));
         updateApp.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -396,7 +398,8 @@ public class AppController {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "可见范围无效");
         }
         App updateApp = new App();
-        BeanUtil.copyProperties(appAdminUpdateRequest, updateApp);
+        BeanUtil.copyProperties(appAdminUpdateRequest, updateApp, "tags");
+        updateApp.setTags(AppTagUtils.toJson(appAdminUpdateRequest.getTags()));
         updateApp.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

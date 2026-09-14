@@ -10,6 +10,23 @@ export const GOOD_APP_PAGE_SIZE = 6
 
 export const PLAZA_APP_PAGE_SIZE = 6
 
+export const MAX_APP_TAG_COUNT = 5
+
+export const MAX_APP_TAG_LENGTH = 20
+
+export const APP_TAG_OPTIONS = [
+  { label: '官网', value: '官网' },
+  { label: '作品集', value: '作品集' },
+  { label: '工具', value: '工具' },
+  { label: '电商', value: '电商' },
+  { label: '博客', value: '博客' },
+  { label: '教育', value: '教育' },
+  { label: '社交', value: '社交' },
+  { label: '游戏', value: '游戏' },
+  { label: '仪表盘', value: '仪表盘' },
+  { label: '个人展示', value: '个人展示' },
+]
+
 export interface QuickPromptItem {
   label: string
   prompt: string

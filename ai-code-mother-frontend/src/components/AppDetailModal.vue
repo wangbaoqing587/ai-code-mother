@@ -24,6 +24,7 @@ const creatorName = computed(() => props.app.user?.userName || '未知用户')
 const creatorAvatar = computed(() => props.app.user?.userAvatar || '')
 const creatorGender = computed(() => props.app.user?.gender ?? 1)
 const createTimeText = computed(() => formatDateTime(props.app.createTime))
+const appTags = computed(() => (props.app.tags ?? []).filter((tag) => !!tag))
 
 function handleOpenChange(value: boolean) {
   emit('update:open', value)
@@ -52,6 +53,12 @@ function handleOpenChange(value: boolean) {
         <div class="detail-value">
           <CodeGenTypeTag v-if="app.codeGenType" :code-gen-type="app.codeGenType" />
           <span v-else>-</span>
+        </div>
+      </div>
+      <div v-if="appTags.length" class="detail-section">
+        <div class="detail-label">标签</div>
+        <div class="detail-tags">
+          <span v-for="tag in appTags" :key="tag" class="app-tag">{{ tag }}</span>
         </div>
       </div>
       <div class="detail-section detail-section-last">
@@ -106,6 +113,22 @@ function handleOpenChange(value: boolean) {
 .detail-value {
   font-size: 15px;
   color: #334155;
+}
+
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  background: rgba(91, 196, 160, 0.16);
+  color: #2d9a78;
 }
 
 .detail-actions {

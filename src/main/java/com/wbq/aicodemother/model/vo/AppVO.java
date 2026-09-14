@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class AppVO implements Serializable {
@@ -57,6 +58,11 @@ public class AppVO implements Serializable {
      * 可见范围：plaza/private
      */
     private String visibility;
+
+    /**
+     * 应用标签
+     */
+    private List<String> tags;
 
     /**
      * 创建用户id

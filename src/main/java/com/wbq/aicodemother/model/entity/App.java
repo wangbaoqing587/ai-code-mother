@@ -89,6 +89,11 @@ public class App implements Serializable {
     private String visibility;
 
     /**
+     * 应用标签 JSON 数组
+     */
+    private String tags;
+
+    /**
      * 创建用户id
      */
     @Column("userId")

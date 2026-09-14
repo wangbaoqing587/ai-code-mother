@@ -15,7 +15,13 @@ import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import UserPageLayout from '@/components/UserPageLayout.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
-import { APP_VISIBILITY_PLAZA, APP_VISIBILITY_PRIVATE } from '@/constants/app'
+import {
+  APP_TAG_OPTIONS,
+  APP_VISIBILITY_PLAZA,
+  APP_VISIBILITY_PRIVATE,
+  MAX_APP_TAG_COUNT,
+  MAX_APP_TAG_LENGTH,
+} from '@/constants/app'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { compressImage } from '@/utils/image'
 import { parseRouteParamId } from '@/utils/route'
@@ -37,6 +43,7 @@ const formState = reactive({
   cover: '',
   priority: undefined as number | undefined,
   visibility: APP_VISIBILITY_PLAZA,
+  tags: [] as string[],
 })
 
 const appId = computed(() => parseRouteParamId(route.params.id))
@@ -76,6 +83,38 @@ function syncFormFromApp() {
     appInfo.value.visibility === APP_VISIBILITY_PRIVATE
       ? APP_VISIBILITY_PRIVATE
       : APP_VISIBILITY_PLAZA
+  formState.tags = [...(appInfo.value.tags ?? [])]
+}
+
+function handleTagsChange(value: unknown) {
+  const list = Array.isArray(value) ? (value as string[]) : []
+  const next: string[] = []
+  const seen = new Set<string>()
+  let overflowLength = false
+  let overflowCount = false
+  for (const raw of list) {
+    const tag = String(raw).trim()
+    if (!tag || seen.has(tag)) {
+      continue
+    }
+    if (tag.length > MAX_APP_TAG_LENGTH) {
+      overflowLength = true
+      continue
+    }
+    if (next.length >= MAX_APP_TAG_COUNT) {
+      overflowCount = true
+      continue
+    }
+    seen.add(tag)
+    next.push(tag)
+  }
+  formState.tags = next
+  if (overflowLength) {
+    message.warning(`单个标签不超过 ${MAX_APP_TAG_LENGTH} 个字`)
+  }
+  if (overflowCount) {
+    message.warning(`最多添加 ${MAX_APP_TAG_COUNT} 个标签`)
+  }
 }
 
 async function fetchAppInfo() {
@@ -136,11 +175,13 @@ async function handleSubmit() {
           cover: formState.cover || undefined,
           priority: formState.priority,
           visibility: formState.visibility,
+          tags: formState.tags,
         })
       : await updateApp({
           id: appId.value,
           appName: formState.appName.trim(),
           visibility: formState.visibility,
+          tags: formState.tags,
         })
     if (res.data.code === 0) {
       message.success('保存成功')
@@ -235,6 +276,19 @@ onMounted(async () => {
             </div>
           </a-form-item>
 
+          <a-form-item label="标签">
+            <a-select
+              v-model:value="formState.tags"
+              mode="tags"
+              :options="APP_TAG_OPTIONS"
+              :token-separators="[',']"
+              placeholder="选择预设标签，或输入后回车添加"
+              allow-clear
+              @change="handleTagsChange"
+            />
+            <div class="tag-field-tip">最多 {{ MAX_APP_TAG_COUNT }} 个，每个不超过 {{ MAX_APP_TAG_LENGTH }} 字</div>
+          </a-form-item>
+
           <a-form-item label="部署密钥">
             <a-input :value="appInfo.deployKey || '-'" disabled class="readonly-field" />
           </a-form-item>
@@ -325,6 +379,19 @@ onMounted(async () => {
             <CodeGenTypeTag v-if="appInfo.codeGenType" :code-gen-type="appInfo.codeGenType" />
             <span v-else>-</span>
           </div>
+        </a-form-item>
+
+        <a-form-item label="标签">
+          <a-select
+            v-model:value="formState.tags"
+            mode="tags"
+            :options="APP_TAG_OPTIONS"
+            :token-separators="[',']"
+            placeholder="选择预设标签，或输入后回车添加"
+            allow-clear
+            @change="handleTagsChange"
+          />
+          <div class="tag-field-tip">最多 {{ MAX_APP_TAG_COUNT }} 个，每个不超过 {{ MAX_APP_TAG_LENGTH }} 字</div>
         </a-form-item>
       </a-form>
 
@@ -452,6 +519,12 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+.tag-field-tip {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
 .readonly-value {
   min-height: 32px;
   display: flex;
@@ -569,5 +642,23 @@ onMounted(async () => {
 
 .app-edit-root :deep(.admin-panel .ant-radio:hover .ant-radio-inner) {
   border-color: #6bb5f0;
+}
+
+.app-edit-root :deep(.ant-select) {
+  width: 100%;
+}
+
+.app-edit-root :deep(.ant-select-selector) {
+  border-radius: 10px !important;
+}
+
+.app-edit-root :deep(.user-content .ant-select-focused .ant-select-selector) {
+  border-color: #5bc4a0 !important;
+  box-shadow: 0 0 0 2px rgba(91, 196, 160, 0.12) !important;
+}
+
+.app-edit-root :deep(.admin-panel .ant-select-focused .ant-select-selector) {
+  border-color: #6bb5f0 !important;
+  box-shadow: 0 0 0 2px rgba(107, 181, 240, 0.12) !important;
 }
 </style>

@@ -30,6 +30,7 @@ const searchParams = reactive<API.AppQueryRequest>({
   codeGenType: undefined,
   deployKey: undefined,
   priority: undefined,
+  tags: undefined,
   userId: undefined,
 })
 
@@ -50,7 +51,10 @@ const tableScrollX = 1032
 async function fetchData() {
   isLoading.value = true
   try {
-    const res = await listAppVoByPageByAdmin({ ...searchParams })
+    const res = await listAppVoByPageByAdmin({
+      ...searchParams,
+      tags: searchParams.tags?.trim() || undefined,
+    })
     if (res.data.code === 0 && res.data.data) {
       dataList.value = res.data.data.records ?? []
       total.value = res.data.data.totalRow ?? 0
@@ -75,6 +79,7 @@ function handleReset() {
   searchParams.codeGenType = undefined
   searchParams.deployKey = undefined
   searchParams.priority = undefined
+  searchParams.tags = undefined
   searchParams.userId = undefined
   searchParams.pageNum = 1
   fetchData()
@@ -215,6 +220,9 @@ onMounted(() => {
           placeholder="优先级"
           style="width: 120px"
         />
+      </a-form-item>
+      <a-form-item label="标签">
+        <a-input v-model:value="searchParams.tags" placeholder="请输入标签" allow-clear />
       </a-form-item>
       <a-form-item>
         <a-space>

@@ -16,6 +16,7 @@ import com.wbq.aicodemother.ai.model.AppNameResult;
 import com.wbq.aicodemother.monitor.MonitorContext;
 import com.wbq.aicodemother.monitor.MonitorContextHolder;
 import com.wbq.aicodemother.utils.AppNameUtils;
+import com.wbq.aicodemother.utils.AppTagUtils;
 import com.wbq.aicodemother.cache.CacheEvictor;
 import com.wbq.aicodemother.constant.AppConstant;
 import com.wbq.aicodemother.constant.UserConstant;
@@ -253,7 +254,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             return null;
         }
         AppVO appVO = new AppVO();
-        BeanUtil.copyProperties(app, appVO);
+        BeanUtil.copyProperties(app, appVO, "tags");
+        appVO.setTags(AppTagUtils.fromJson(app.getTags()));
         Long userId = app.getUserId();
         if (userId != null) {
             User user = userService.getById(userId);
@@ -281,7 +283,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .collect(Collectors.toMap(User::getId, userService::getUserVO));
         List<AppVO> appVOList = appList.stream().map(app -> {
             AppVO appVO = new AppVO();
-            BeanUtil.copyProperties(app, appVO);
+            BeanUtil.copyProperties(app, appVO, "tags");
+            appVO.setTags(AppTagUtils.fromJson(app.getTags()));
             appVO.setUser(userVOMap.get(app.getUserId()));
             return appVO;
         }).collect(Collectors.toList());
@@ -333,6 +336,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String deployKey = appQueryRequest.getDeployKey();
         Integer priority = appQueryRequest.getPriority();
         String visibility = appQueryRequest.getVisibility();
+        String tags = appQueryRequest.getTags();
         Long userId = appQueryRequest.getUserId();
         String sortField = appQueryRequest.getSortField();
         String sortOrder = appQueryRequest.getSortOrder();
@@ -345,6 +349,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .eq("deployKey", deployKey)
                 .eq("priority", priority)
                 .eq("visibility", visibility)
+                .like("tags", tags, StrUtil.isNotBlank(tags))
                 .eq("userId", userId)
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }

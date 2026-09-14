@@ -51,6 +51,11 @@ public class AppQueryRequest extends PageRequest implements Serializable {
     private String visibility;
 
     /**
+     * 应用标签
+     */
+    private String tags;
+
+    /**
      * 创建用户id
      */
     private Long userId;

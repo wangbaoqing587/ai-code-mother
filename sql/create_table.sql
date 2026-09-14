@@ -41,6 +41,7 @@ create table if not exists app
     deployedTime datetime                           null comment '部署时间',
     priority     int      default 0                 not null comment '优先级',
     visibility   varchar(32) default 'plaza'        not null comment '可见范围：plaza广场可见/private仅自己可见',
+    tags         varchar(512)                       null comment '应用标签 JSON 数组',
     userId       bigint                             not null comment '创建用户id',
     editTime     datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
     createTime   datetime default CURRENT_TIMESTAMP not null comment '创建时间',

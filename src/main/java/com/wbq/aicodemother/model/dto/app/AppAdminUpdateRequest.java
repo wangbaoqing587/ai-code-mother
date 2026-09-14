@@ -3,6 +3,7 @@ package com.wbq.aicodemother.model.dto.app;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class AppAdminUpdateRequest implements Serializable {
@@ -31,6 +32,11 @@ public class AppAdminUpdateRequest implements Serializable {
      * 可见范围：plaza/private
      */
     private String visibility;
+
+    /**
+     * 应用标签
+     */
+    private List<String> tags;
 
     private static final long serialVersionUID = 1L;
 }

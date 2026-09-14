@@ -33,6 +33,7 @@ declare namespace API {
     cover?: string
     priority?: number
     visibility?: string
+    tags?: string[]
   }
 
   type AppDeployRequest = {
@@ -52,6 +53,7 @@ declare namespace API {
     deployKey?: string
     priority?: number
     visibility?: string
+    tags?: string
     userId?: number
   }
 
@@ -59,6 +61,7 @@ declare namespace API {
     id?: number | string
     appName?: string
     visibility?: string
+    tags?: string[]
   }
 
   type AppVO = {
@@ -72,6 +75,7 @@ declare namespace API {
     deployedTime?: string
     priority?: number
     visibility?: string
+    tags?: string[]
     userId?: number
     createTime?: string
     updateTime?: string
