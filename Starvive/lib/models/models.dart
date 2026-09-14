@@ -109,6 +109,7 @@ class AppVO {
     this.deployKey,
     this.deployedTime,
     this.priority,
+    this.visibility,
     this.userId,
     this.createTime,
     this.updateTime,
@@ -125,6 +126,7 @@ class AppVO {
       deployKey: json['deployKey'] as String?,
       deployedTime: json['deployedTime'] as String?,
       priority: json['priority'] as int?,
+      visibility: json['visibility'] as String?,
       userId: _jsonStringify(json['userId']),
       createTime: json['createTime'] as String?,
       updateTime: json['updateTime'] as String?,
@@ -142,6 +144,7 @@ class AppVO {
   final String? deployKey;
   final String? deployedTime;
   final int? priority;
+  final String? visibility;
   final String? userId;
   final String? createTime;
   final String? updateTime;

@@ -35,6 +35,7 @@ import com.wbq.aicodemother.model.entity.AppComment;
 import com.wbq.aicodemother.model.entity.AppLike;
 import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.model.enums.AppGenStatusEnum;
+import com.wbq.aicodemother.model.enums.AppVisibilityEnum;
 import com.wbq.aicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 import com.wbq.aicodemother.model.vo.AppCommentVO;
@@ -184,6 +185,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         app.setAppName(appName);
         app.setCodeGenType(selectedCodeGenType.getValue());
         app.setGenStatus(AppGenStatusEnum.IDLE.getValue());
+        app.setVisibility(AppVisibilityEnum.PLAZA.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -330,6 +332,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         String codeGenType = appQueryRequest.getCodeGenType();
         String deployKey = appQueryRequest.getDeployKey();
         Integer priority = appQueryRequest.getPriority();
+        String visibility = appQueryRequest.getVisibility();
         Long userId = appQueryRequest.getUserId();
         String sortField = appQueryRequest.getSortField();
         String sortOrder = appQueryRequest.getSortOrder();
@@ -341,6 +344,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .eq("codeGenType", codeGenType)
                 .eq("deployKey", deployKey)
                 .eq("priority", priority)
+                .eq("visibility", visibility)
                 .eq("userId", userId)
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }

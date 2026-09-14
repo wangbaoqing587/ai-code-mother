@@ -83,6 +83,12 @@ public class App implements Serializable {
     private Integer priority;
 
     /**
+     * 可见范围：plaza/private
+     */
+    @Column("visibility")
+    private String visibility;
+
+    /**
      * 创建用户id
      */
     @Column("userId")

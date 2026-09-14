@@ -17,5 +17,10 @@ public class AppUpdateRequest implements Serializable {
      */
     private String appName;
 
+    /**
+     * 可见范围：plaza/private
+     */
+    private String visibility;
+
     private static final long serialVersionUID = 1L;
 }

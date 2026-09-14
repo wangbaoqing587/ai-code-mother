@@ -206,11 +206,12 @@ class AppService {
   Future<BaseResponse<bool>> updateApp({
     required String id,
     required String appName,
+    String? visibility,
   }) {
     return _client.request(
       '/app/update',
       method: 'POST',
-      data: {'id': id, 'appName': appName},
+      data: {'id': id, 'appName': appName, 'visibility': visibility},
       fromJsonT: (data) => data as bool?,
     );
   }

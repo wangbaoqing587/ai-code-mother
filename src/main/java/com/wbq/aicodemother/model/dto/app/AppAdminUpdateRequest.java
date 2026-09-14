@@ -27,5 +27,10 @@ public class AppAdminUpdateRequest implements Serializable {
      */
     private Integer priority;
 
+    /**
+     * 可见范围：plaza/private
+     */
+    private String visibility;
+
     private static final long serialVersionUID = 1L;
 }

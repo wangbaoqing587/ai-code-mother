@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:starvive/config/env.dart';
 import 'package:starvive/core/constants/app_constants.dart';
+import 'package:starvive/core/constants/business_constants.dart';
 import 'package:starvive/core/utils/format_utils.dart';
 import 'package:starvive/models/models.dart';
 import 'package:starvive/providers/providers.dart';
@@ -25,6 +26,7 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
   bool _isLoading = false;
   bool _isSubmitting = false;
   final _nameController = TextEditingController();
+  String _visibility = appVisibilityPlaza;
 
   @override
   void initState() {
@@ -44,6 +46,9 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
       if (res.isSuccess && res.data != null) {
         _appInfo = res.data!;
         _nameController.text = _appInfo.appName ?? '';
+        _visibility = _appInfo.visibility == appVisibilityPrivate
+            ? appVisibilityPrivate
+            : appVisibilityPlaza;
         if (_appInfo.userId != auth.id) {
           context.go('/');
         }
@@ -74,6 +79,7 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
       final res = await ref.read(appServiceProvider).updateApp(
             id: widget.appId,
             appName: _nameController.text.trim(),
+            visibility: _visibility,
           );
       if (res.isSuccess) {
         ScaffoldMessenger.of(context)
@@ -149,6 +155,25 @@ class _AppEditPageState extends ConsumerState<AppEditPage> {
                           TextField(
                             controller: _nameController,
                             decoration: const InputDecoration(labelText: '应用名称'),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                          const Text('可见范围'),
+                          const SizedBox(height: AppSpacing.sm),
+                          SegmentedButton<String>(
+                            segments: const [
+                              ButtonSegment(
+                                value: appVisibilityPlaza,
+                                label: Text('广场可见'),
+                              ),
+                              ButtonSegment(
+                                value: appVisibilityPrivate,
+                                label: Text('仅自己可见'),
+                              ),
+                            ],
+                            selected: {_visibility},
+                            onSelectionChanged: (selected) {
+                              setState(() => _visibility = selected.first);
+                            },
                           ),
                           const SizedBox(height: AppSpacing.md),
                           TextField(

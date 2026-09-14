@@ -70,8 +70,19 @@ const hasMore = computed(() => props.apps.length < props.total)
 }
 
 .app-grid--compact {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
+  --app-grid-cols: 5;
+  --app-grid-gap: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--app-grid-gap);
+}
+
+.app-grid--compact > * {
+  flex: 0 0 calc((100% - var(--app-grid-gap) * (var(--app-grid-cols) - 1)) / var(--app-grid-cols));
+  max-width: calc((100% - var(--app-grid-gap) * (var(--app-grid-cols) - 1)) / var(--app-grid-cols));
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .load-more-wrap {
@@ -82,7 +93,7 @@ const hasMore = computed(() => props.apps.length < props.total)
 
 @media (max-width: 1200px) {
   .app-grid--compact {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    --app-grid-cols: 4;
   }
 }
 
@@ -92,7 +103,7 @@ const hasMore = computed(() => props.apps.length < props.total)
   }
 
   .app-grid--compact {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    --app-grid-cols: 3;
   }
 }
 
@@ -106,14 +117,14 @@ const hasMore = computed(() => props.apps.length < props.total)
   }
 
   .app-grid--compact {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    --app-grid-cols: 2;
+    --app-grid-gap: 12px;
   }
 }
 
 @media (max-width: 480px) {
   .app-grid--compact {
-    grid-template-columns: 1fr;
+    --app-grid-cols: 1;
   }
 }
 </style>

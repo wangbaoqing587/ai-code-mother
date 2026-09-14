@@ -54,6 +54,11 @@ public class AppVO implements Serializable {
     private Integer priority;
 
     /**
+     * 可见范围：plaza/private
+     */
+    private String visibility;
+
+    /**
      * 创建用户id
      */
     private Long userId;

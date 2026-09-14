@@ -15,6 +15,7 @@ import CodeGenTypeTag from '@/components/CodeGenTypeTag.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import UserPageLayout from '@/components/UserPageLayout.vue'
 import { getDeployUrl, getStaticPreviewUrl } from '@/config/env'
+import { APP_VISIBILITY_PLAZA, APP_VISIBILITY_PRIVATE } from '@/constants/app'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { compressImage } from '@/utils/image'
 import { parseRouteParamId } from '@/utils/route'
@@ -35,6 +36,7 @@ const formState = reactive({
   appName: '',
   cover: '',
   priority: undefined as number | undefined,
+  visibility: APP_VISIBILITY_PLAZA,
 })
 
 const appId = computed(() => parseRouteParamId(route.params.id))
@@ -65,6 +67,10 @@ function syncFormFromApp() {
   formState.appName = appInfo.value.appName ?? ''
   formState.cover = appInfo.value.cover ?? ''
   formState.priority = appInfo.value.priority
+  formState.visibility =
+    appInfo.value.visibility === APP_VISIBILITY_PRIVATE
+      ? APP_VISIBILITY_PRIVATE
+      : APP_VISIBILITY_PLAZA
 }
 
 async function fetchAppInfo() {
@@ -125,10 +131,12 @@ async function handleSubmit() {
           appName: formState.appName.trim(),
           cover: formState.cover || undefined,
           priority: formState.priority,
+          visibility: formState.visibility,
         })
       : await updateApp({
           id: appId.value,
           appName: formState.appName.trim(),
+          visibility: formState.visibility,
         })
     if (res.data.code === 0) {
       message.success('保存成功')
@@ -191,6 +199,13 @@ onMounted(async () => {
                 </a-upload>
               </div>
             </div>
+          </a-form-item>
+
+          <a-form-item label="可见范围">
+            <a-radio-group v-model:value="formState.visibility">
+              <a-radio :value="APP_VISIBILITY_PLAZA">广场可见</a-radio>
+              <a-radio :value="APP_VISIBILITY_PRIVATE">仅自己可见</a-radio>
+            </a-radio-group>
           </a-form-item>
 
           <a-form-item label="优先级">
@@ -288,6 +303,13 @@ onMounted(async () => {
               </a-upload>
             </div>
           </div>
+        </a-form-item>
+
+        <a-form-item label="可见范围">
+          <a-radio-group v-model:value="formState.visibility">
+            <a-radio :value="APP_VISIBILITY_PLAZA">广场可见</a-radio>
+            <a-radio :value="APP_VISIBILITY_PRIVATE">仅自己可见</a-radio>
+          </a-radio-group>
         </a-form-item>
 
         <a-form-item label="初始提示词">
@@ -525,5 +547,23 @@ onMounted(async () => {
 
 .app-edit-panel :deep(.ant-input-number-input) {
   caret-color: #6bb5f0;
+}
+
+.app-edit-root :deep(.user-content .ant-radio-checked .ant-radio-inner) {
+  border-color: #5bc4a0;
+  background-color: #5bc4a0;
+}
+
+.app-edit-root :deep(.user-content .ant-radio:hover .ant-radio-inner) {
+  border-color: #5bc4a0;
+}
+
+.app-edit-root :deep(.admin-panel .ant-radio-checked .ant-radio-inner) {
+  border-color: #6bb5f0;
+  background-color: #6bb5f0;
+}
+
+.app-edit-root :deep(.admin-panel .ant-radio:hover .ant-radio-inner) {
+  border-color: #6bb5f0;
 }
 </style>

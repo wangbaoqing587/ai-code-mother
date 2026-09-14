@@ -18,6 +18,7 @@ import com.wbq.aicodemother.exception.ThrowUtils;
 import com.wbq.aicodemother.model.dto.app.*;
 import com.wbq.aicodemother.model.entity.App;
 import com.wbq.aicodemother.model.entity.User;
+import com.wbq.aicodemother.model.enums.AppVisibilityEnum;
 import com.wbq.aicodemother.model.enums.CodeGenTypeEnum;
 import com.wbq.aicodemother.model.vo.AppCommentVO;
 import com.wbq.aicodemother.model.vo.AppLikeToggleVO;
@@ -181,9 +182,14 @@ public class AppController {
         if (!oldApp.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        String visibility = appUpdateRequest.getVisibility();
+        if (StrUtil.isNotBlank(visibility) && AppVisibilityEnum.getEnumByValue(visibility) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "可见范围无效");
+        }
         App updateApp = new App();
         updateApp.setId(id);
         updateApp.setAppName(appUpdateRequest.getAppName());
+        updateApp.setVisibility(visibility);
         updateApp.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(updateApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -237,6 +243,7 @@ public class AppController {
             appQueryRequest.setSortField("createTime");
             appQueryRequest.setSortOrder("descend");
         }
+        appQueryRequest.setVisibility(AppVisibilityEnum.PLAZA.getValue());
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
@@ -257,6 +264,7 @@ public class AppController {
         long pageSize = appQueryRequest.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         appQueryRequest.setUserId(loginUser.getId());
+        appQueryRequest.setVisibility(null);
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
@@ -281,6 +289,7 @@ public class AppController {
         long pageSize = appQueryRequest.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR);
         appQueryRequest.setPriority(AppConstant.GOOD_APP_PRIORITY);
+        appQueryRequest.setVisibility(AppVisibilityEnum.PLAZA.getValue());
         QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
@@ -381,6 +390,10 @@ public class AppController {
         if (AppConstant.GOOD_APP_PRIORITY.equals(appAdminUpdateRequest.getPriority())
                 && StrUtil.isBlank(oldApp.getDeployKey())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "仅已部署的应用可设为精选");
+        }
+        String visibility = appAdminUpdateRequest.getVisibility();
+        if (StrUtil.isNotBlank(visibility) && AppVisibilityEnum.getEnumByValue(visibility) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "可见范围无效");
         }
         App updateApp = new App();
         BeanUtil.copyProperties(appAdminUpdateRequest, updateApp);
