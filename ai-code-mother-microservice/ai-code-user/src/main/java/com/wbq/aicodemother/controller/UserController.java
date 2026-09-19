@@ -1,0 +1,282 @@
+package com.wbq.aicodemother.controller;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.mybatisflex.core.paginate.Page;
+import com.wbq.aicodemother.annotation.AuthCheck;
+import com.wbq.aicodemother.common.BaseResponse;
+import com.wbq.aicodemother.common.DeleteRequest;
+import com.wbq.aicodemother.common.ResultUtils;
+import com.wbq.aicodemother.constant.UserConstant;
+import com.wbq.aicodemother.exception.BusinessException;
+import com.wbq.aicodemother.exception.ErrorCode;
+import com.wbq.aicodemother.exception.ThrowUtils;
+import com.wbq.aicodemother.model.dto.user.*;
+import com.wbq.aicodemother.model.entity.User;
+import com.wbq.aicodemother.model.enums.GenderEnum;
+import com.wbq.aicodemother.model.vo.LoginUserVO;
+import com.wbq.aicodemother.model.vo.UserVO;
+import com.wbq.aicodemother.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 用户 控制层。
+ *
+ * @author <a href="https://github.com/wangbaoqing587">王包青</a>
+ */
+@RestController
+@RequestMapping("/user")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    /**
+     * 用户注册
+     *
+     * @param userRegisterRequest 用户注册请求
+     * @return 新用户 id
+     */
+    @PostMapping("register")
+    public BaseResponse<Long> register(@RequestBody UserRegisterRequest userRegisterRequest) {
+        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userName = userRegisterRequest.getUserName();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        Integer gender = userRegisterRequest.getGender();
+        long result = userService.userRegister(userAccount, userName, userPassword, checkPassword, gender);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     *
+     * @param userLoginRequest 用户登录请求
+     * @param request 请求对象
+     * @return 脱敏后的用户登录信息
+     */
+    @PostMapping("login")
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userLoginRequest.getUserAccount();
+        String userPassword = userLoginRequest.getUserPassword();
+        LoginUserVO result = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(result);
+    }
+
+    @GetMapping("/get/login")
+    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.getLoginUserVO(loginUser));
+    }
+
+    @PostMapping("/logout")
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        boolean result = userService.userLogout(request);
+        return ResultUtils.success(result);
+    }
+
+    @PostMapping("/change/password")
+    public BaseResponse<Boolean> changePassword(@RequestBody UserChangePasswordRequest userChangePasswordRequest,
+                                                HttpServletRequest request) {
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.changePassword(
+                loginUser,
+                userChangePasswordRequest.getUserPassword(),
+                userChangePasswordRequest.getNewPassword(),
+                userChangePasswordRequest.getCheckPassword());
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 创建用户
+     */
+    @PostMapping("/add")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
+        ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
+        User user = new User();
+        BeanUtil.copyProperties(userAddRequest, user);
+        if (user.getGender() == null) {
+            user.setGender(GenderEnum.MALE.getValue());
+        } else if (GenderEnum.getEnumByValue(user.getGender()) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "性别参数错误");
+        }
+        // 默认密码 12345678
+        final String DEFAULT_PASSWORD = "12345678";
+        String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
+        user.setUserPassword(encryptPassword);
+        boolean result = userService.save(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(user.getId());
+    }
+
+    /**
+     * 根据 id 获取用户（仅管理员）
+     */
+    @GetMapping("/get")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<User> getUserById(long id) {
+        ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        User user = userService.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        return ResultUtils.success(user);
+    }
+
+    /**
+     * 根据 id 获取用户包装类（公开信息）
+     */
+    @GetMapping("/get/vo")
+    public BaseResponse<UserVO> getUserVOById(long id) {
+        ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        User user = userService.getById(id);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        UserVO userVO = userService.getUserVO(user);
+        userVO.setUserAccount(null);
+        userVO.setUserRole(null);
+        return ResultUtils.success(userVO);
+    }
+
+    /**
+     * 删除用户
+     */
+    @PostMapping("/delete")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
+        if (deleteRequest == null || deleteRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean b = userService.removeById(deleteRequest.getId());
+        return ResultUtils.success(b);
+    }
+
+    /**
+     * 更新用户（管理员可更新任意用户；普通用户仅可更新自己的昵称、头像、简介、性别）
+     */
+    @PostMapping("/update")
+    public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
+                                            HttpServletRequest request) {
+        if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        if (!isAdmin && !loginUser.getId().equals(userUpdateRequest.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        String userName = userUpdateRequest.getUserName();
+        if (userName != null && userName.trim().length() > UserConstant.MAX_USER_NAME_LENGTH) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名过长");
+        }
+        Integer gender = userUpdateRequest.getGender();
+        if (gender != null && GenderEnum.getEnumByValue(gender) == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "性别参数错误");
+        }
+        User user = new User();
+        user.setId(userUpdateRequest.getId());
+        user.setUserName(userUpdateRequest.getUserName());
+        user.setUserAvatar(userUpdateRequest.getUserAvatar());
+        user.setUserProfile(userUpdateRequest.getUserProfile());
+        if (gender != null) {
+            user.setGender(gender);
+        }
+        if (isAdmin) {
+            user.setUserRole(userUpdateRequest.getUserRole());
+        }
+        boolean result = userService.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 分页获取用户封装列表（仅管理员）
+     *
+     * @param userQueryRequest 查询请求参数
+     */
+    @PostMapping("/list/page/vo")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
+        ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        long pageNum = userQueryRequest.getPageNum();
+        long pageSize = userQueryRequest.getPageSize();
+        Page<User> userPage = userService.page(Page.of(pageNum, pageSize),
+                userService.getQueryWrapper(userQueryRequest));
+        // 数据脱敏
+        Page<UserVO> userVOPage = new Page<>(pageNum, pageSize, userPage.getTotalRow());
+        List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
+        userVOPage.setRecords(userVOList);
+        return ResultUtils.success(userVOPage);
+    }
+
+    /**
+     * 保存用户。
+     *
+     * @param user 用户
+     * @return {@code true} 保存成功，{@code false} 保存失败
+     */
+    @PostMapping("save")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public boolean save(@RequestBody User user) {
+        return userService.save(user);
+    }
+
+    /**
+     * 根据主键删除用户。
+     *
+     * @param id 主键
+     * @return {@code true} 删除成功，{@code false} 删除失败
+     */
+    @DeleteMapping("remove/{id}")
+    public boolean remove(@PathVariable Long id) {
+        return userService.removeById(id);
+    }
+
+    /**
+     * 根据主键更新用户。
+     *
+     * @param user 用户
+     * @return {@code true} 更新成功，{@code false} 更新失败
+     */
+    @PutMapping("update")
+    public boolean update(@RequestBody User user) {
+        return userService.updateById(user);
+    }
+
+    /**
+     * 查询所有用户。
+     *
+     * @return 所有数据
+     */
+    @GetMapping("list")
+    public List<User> list() {
+        return userService.list();
+    }
+
+    /**
+     * 根据主键获取用户。
+     *
+     * @param id 用户主键
+     * @return 用户详情
+     */
+    @GetMapping("getInfo/{id}")
+    public User getInfo(@PathVariable Long id) {
+        return userService.getById(id);
+    }
+
+    /**
+     * 分页查询用户。
+     *
+     * @param page 分页对象
+     * @return 分页对象
+     */
+    @GetMapping("page")
+    public Page<User> page(Page<User> page) {
+        return userService.page(page);
+    }
+
+}
