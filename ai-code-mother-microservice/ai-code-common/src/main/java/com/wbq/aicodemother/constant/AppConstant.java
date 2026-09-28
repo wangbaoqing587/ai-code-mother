@@ -2,6 +2,14 @@ package com.wbq.aicodemother.constant;
 
 public interface AppConstant {
 
+    static String tmpRootDir() {
+        String fromEnv = System.getenv("AI_CODE_TMP_ROOT");
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return fromEnv.trim();
+        }
+        return System.getProperty("user.dir") + "/tmp";
+    }
+
     /**
      * 精选应用列表缓存名
      */
@@ -25,12 +33,12 @@ public interface AppConstant {
     /**
      * 应用生成目录
      */
-    String CODE_OUTPUT_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    String CODE_OUTPUT_ROOT_DIR = tmpRootDir() + "/code_output";
 
     /**
      * 应用部署目录
      */
-    String CODE_DEPLOY_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_deploy";
+    String CODE_DEPLOY_ROOT_DIR = tmpRootDir() + "/code_deploy";
 
     /**
      * 应用部署域名

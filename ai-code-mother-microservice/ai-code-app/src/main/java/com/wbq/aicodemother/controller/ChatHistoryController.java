@@ -15,8 +15,6 @@ import com.wbq.aicodemother.model.entity.User;
 import com.wbq.aicodemother.service.ChatHistoryService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import javassist.runtime.Inner;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -32,10 +30,6 @@ public class ChatHistoryController {
 
     @Resource
     private ChatHistoryService chatHistoryService;
-
-    @Resource
-    @Lazy
-    private InnerUserService userService;
 
     @GetMapping("/app/{appId}")
     public BaseResponse<Page<ChatHistory>> listAppChatHistory(@PathVariable Long appId,

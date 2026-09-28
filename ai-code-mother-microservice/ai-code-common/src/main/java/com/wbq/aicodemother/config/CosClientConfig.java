@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Configuration;
         prefix = "cos.client",
         name = {"host", "secretId", "secretKey", "region", "bucket"}
 )
+@ConfigurationProperties(prefix = "cos.client")
 @Data
 public class CosClientConfig {
 
